@@ -1,0 +1,15 @@
+{
+  "application": {
+    "timezone": "UTC",
+    "loginEnabled": true
+  },
+  "providers": {
+    "openrouter": {
+      "apiKey": "${OPENROUTER_API_KEY}"
+    }
+  },
+  "mcpServers": {},
+  "memoryServers": {},
+  "dockerContainers": {},
+  "tts": null
+}

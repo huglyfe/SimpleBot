@@ -1,0 +1,840 @@
+/**
+ * Shared primitives: the controls under `components/primitives/`, plus the
+ * three text treatments and one button every area composes from.
+ */
+
+/* Buttons ---------------------------------------------------------------- */
+
+/**
+ * One button, four modifiers. Neutral by default, `is-primary` for the single
+ * committing action on a surface, `is-quiet` for a borderless action inside a
+ * row or list, `is-small` for compact chrome, `is-danger` for removal.
+ */
+/* A button is as wide as its label: in a flex row it never shrinks under it,
+   and it never breaks the label across lines. The row wraps instead. */
+.ui-button {
+  min-height: var(--touch-target);
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  padding: 0 var(--space-lg);
+  color: var(--text);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  transition: background var(--motion-fast);
+}
+
+.ui-button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.ui-button:active:not(:disabled) {
+  background: var(--surface-active);
+}
+
+.ui-button.is-primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.ui-button.is-primary:hover:not(:disabled),
+.ui-button.is-primary:active:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.ui-button.is-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.ui-button.is-quiet:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.ui-button.is-small {
+  min-height: 30px;
+  padding: 0 var(--space-sm);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-regular);
+}
+
+.ui-button.is-danger {
+  border-color: transparent;
+  background: var(--danger);
+  color: var(--on-accent);
+}
+
+.ui-button.is-danger:hover:not(:disabled),
+.ui-button.is-danger:active:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+.ui-button.is-quiet.is-danger {
+  background: transparent;
+  color: var(--danger);
+}
+
+.ui-button.is-quiet.is-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+/* One disabled treatment for every variant: unavailable reads as grey. The
+   second selector only matches the one variant with higher specificity. */
+.ui-button:disabled,
+.ui-button.is-quiet.is-danger:disabled {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* Text ------------------------------------------------------------------- */
+
+/**
+ * Three text treatments carry every hint, empty state, and failure in the
+ * app. `ui-hint` is fine print beside a control, `ui-empty` is a surface with
+ * nothing in it yet, `ui-notice` is a failure that needs to be seen.
+ */
+.ui-hint {
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+  line-height: var(--leading-body);
+}
+
+.ui-hint.is-error {
+  color: var(--danger);
+}
+
+.ui-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.ui-notice {
+  margin: var(--space-md) 0 0;
+  border-radius: var(--radius-control);
+  background: var(--danger-soft);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+/* Scrollbar -------------------------------------------------------------- */
+
+.ui-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.ui-scrollbar::-webkit-scrollbar {
+  width: var(--space-sm);
+  height: var(--space-sm);
+}
+
+.ui-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ui-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  background-clip: content-box;
+}
+
+.ui-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+  background-clip: content-box;
+}
+
+/* Avatar */
+
+.ui-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  user-select: none;
+}
+
+.ui-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Icon button */
+
+.ui-icon-button {
+  display: inline-grid;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  transition: background var(--motion-fast);
+}
+
+.ui-icon-button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.ui-icon-button:active:not(:disabled) {
+  background: var(--surface-active);
+}
+
+.ui-icon-button:disabled {
+  opacity: 0.4;
+}
+
+.ui-icon-button.is-primary:not(:disabled) {
+  color: var(--accent);
+}
+
+.ui-icon-button.is-warning:not(:disabled) {
+  color: var(--warning);
+}
+
+.ui-saving {
+  animation: ui-saving 1s linear infinite;
+}
+
+@keyframes ui-saving {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-saving {
+    animation: none;
+  }
+}
+
+.ui-icon-button.is-danger:not(:disabled) {
+  color: var(--danger);
+}
+
+.ui-icon-button.is-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+.ui-icon-button > svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Native checkbox semantics in one compact switch presentation. */
+
+.ui-switch {
+  position: relative;
+  width: 32px;
+  height: 19px;
+  min-height: 0;
+  flex: none;
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--text-muted);
+  padding: 0;
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+
+.ui-switch::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: var(--radius-pill);
+  background: var(--switch-thumb);
+  box-shadow: var(--shadow-pop);
+  content: '';
+  transition: transform var(--motion-fast);
+}
+
+.ui-switch:checked {
+  background: var(--accent);
+}
+
+.ui-switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ui-switch:checked::after {
+  transform: translateX(13px);
+}
+
+/* Native dialogs share one reset and browser-owned modal backdrop. */
+:where(dialog.ui-sheet, dialog.ui-dialog, dialog.sidebar) {
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+}
+dialog:not([open]) {
+  display: none;
+}
+dialog::backdrop {
+  background: var(--overlay-scrim);
+}
+
+/* Sheet */
+
+/**
+ * One panel with three arrivals. Each placement points back at the control
+ * that opened it: `side` at the header's right-hand controls, `top` at the
+ * bot identity, `center` at the drawer's application settings.
+ */
+.ui-sheet {
+  position: fixed;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--surface);
+  box-shadow: var(--shadow-sheet);
+}
+
+.ui-sheet.is-side {
+  height: 100dvh;
+  inset: 0 0 0 auto;
+  max-width: 100vw;
+  border-left: 1px solid var(--border);
+  animation: ui-sheet-in-side var(--motion-expressive);
+}
+
+/* Sized to the one column it holds; full-bleed left a form in a wide void. */
+.ui-sheet.is-top {
+  inset: 0 0 auto;
+  width: min(calc(var(--form-measure) + var(--space-xl) * 2), 100vw);
+  max-height: 88dvh;
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-bubble) var(--radius-bubble);
+  margin-inline: auto;
+  animation: ui-sheet-in-top var(--motion-expressive);
+}
+
+/**
+ * A centred panel sizes to its content up to a cap. It used to be a fixed
+ * 1100x920 box, so a sheet holding three lines of "nothing configured"
+ * rendered them in the corner of a near-fullscreen void.
+ */
+.ui-sheet.is-center {
+  top: 50%;
+  left: 50%;
+  width: min(
+    calc(var(--form-measure) + var(--space-xl) * 2),
+    calc(100vw - var(--space-xl) * 2)
+  );
+  height: auto;
+  max-height: calc(100dvh - var(--space-xl) * 2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-bubble);
+  animation: ui-sheet-in-center var(--motion-expressive);
+  transform: translate(-50%, -50%);
+}
+
+/* Full-bleed on a phone: the inset would cost more than it reads. */
+@media (max-width: 800px) {
+  .ui-sheet.is-center {
+    inset: 0;
+    width: auto;
+    height: auto;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    transform: none;
+    animation: none;
+  }
+}
+
+/* Wide panels still read as one column: measure, centred, not stretched. */
+.ui-sheet.is-center .ui-sheet-body,
+.ui-sheet.is-top .ui-sheet-body {
+  width: min(100%, var(--form-measure));
+  margin-inline: auto;
+}
+
+/* A centred panel floats, so it needs more separation than an edge sheet. */
+.ui-sheet.is-center::backdrop {
+  background: var(--overlay-scrim-strong);
+}
+
+@keyframes ui-sheet-in-side {
+  from {
+    transform: translateX(var(--space-xl));
+    opacity: 0;
+  }
+}
+
+@keyframes ui-sheet-in-top {
+  from {
+    transform: translateY(calc(var(--space-xl) * -1));
+    opacity: 0;
+  }
+}
+
+@keyframes ui-sheet-in-center {
+  from {
+    transform: translate(-50%, -50%) scale(0.97);
+    opacity: 0;
+  }
+}
+
+.ui-sheet-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.ui-sheet-heading {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.ui-sheet-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-sheet-body {
+  container-type: inline-size;
+  overflow-y: auto;
+  padding: var(--space-lg);
+}
+
+/* Confirm dialog */
+
+.ui-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: min(420px, calc(100vw - var(--space-2xl)));
+  gap: var(--space-md);
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sheet);
+  padding: var(--space-lg);
+}
+
+.ui-dialog-title {
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+}
+
+.ui-dialog-body {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: grid;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+}
+
+.ui-dialog-body p {
+  margin: 0;
+}
+
+.ui-dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.ui-dialog-footer .ui-button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Segmented control — the toggle style the cutover regressed */
+
+.ui-segmented {
+  display: inline-flex;
+  min-width: 0;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  padding: 2px;
+  margin: 0;
+}
+
+.ui-segmented-option {
+  display: grid;
+  min-height: 32px;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-md);
+  color: var(--text-muted);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.ui-segmented-option:hover:not(.is-disabled):not(.is-selected) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.ui-segmented-option.is-selected {
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lift);
+  color: var(--text);
+}
+
+.ui-segmented-option.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The ring rides closer here: the track leaves the option only 2px to sit in. */
+.ui-segmented-option:has(input:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* One responsive field grammar, sized by its panel rather than the window. */
+.ui-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  align-items: center;
+  column-gap: var(--space-lg);
+  row-gap: var(--space-xs);
+  min-width: 0;
+  min-height: var(--touch-target);
+}
+
+.ui-field-label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-field-title {
+  color: var(--text);
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+}
+
+.ui-field-label p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+  line-height: var(--leading-body);
+}
+
+.ui-field-control {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  max-width: 22rem;
+  justify-self: end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.ui-field-control > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ui-field-control input:not([type='checkbox'], [type='radio']),
+.ui-field-control select,
+.ui-field-control textarea,
+.ui-field-control > .repeatable {
+  width: 100%;
+}
+
+.ui-field:has(input[type='number'], .ui-switch, .ui-segmented) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.ui-field:has(input[type='number']) {
+  grid-template-columns: minmax(0, 1fr) 10ch;
+}
+
+.ui-field-control input[type='number'] {
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-field > .ui-hint {
+  grid-column: 2;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Writing and structured lists need the full available line length. */
+.ui-field:has(> .sr-only),
+.ui-field:has(textarea, .repeatable),
+.ui-field:not(:has(.ui-field-control)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ui-field:has(> .sr-only) > .ui-field-control,
+.ui-field:has(textarea, .repeatable) > .ui-field-control {
+  max-width: none;
+}
+
+.ui-field:has(> .sr-only) > .ui-hint,
+.ui-field:has(textarea, .repeatable) > .ui-hint {
+  grid-column: 1;
+}
+
+@media (max-width: 680px), (pointer: coarse) {
+  .ui-field .ui-segmented-option,
+  .ui-field:has(.ui-switch) .ui-field-label label {
+    min-height: var(--touch-target);
+  }
+
+  .ui-field:has(.ui-switch) .ui-field-label label {
+    display: flex;
+    align-items: center;
+  }
+}
+
+@container (max-width: 380px) {
+  .ui-field:not(:has(input[type='number'], .ui-switch)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ui-field > .ui-hint {
+    grid-column: 1 / -1;
+  }
+
+  .ui-field-control {
+    max-width: none;
+    justify-content: flex-start;
+  }
+}
+
+/* Range */
+
+.ui-range {
+  width: 100%;
+  height: var(--space-lg);
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ui-range::-webkit-slider-runnable-track {
+  height: var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--ui-range-progress, 0%),
+    var(--surface-sunken) var(--ui-range-progress, 0%)
+  );
+}
+
+.ui-range::-moz-range-track {
+  height: var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--ui-range-progress, 0%),
+    var(--surface-sunken) var(--ui-range-progress, 0%)
+  );
+}
+
+.ui-range::-webkit-slider-thumb {
+  width: var(--space-lg);
+  height: var(--space-lg);
+  margin-top: -6px;
+  appearance: none;
+  border: 2px solid var(--surface-raised);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  box-shadow: var(--shadow-lift);
+}
+
+.ui-range::-moz-range-thumb {
+  width: var(--space-md);
+  height: var(--space-md);
+  border: 2px solid var(--surface-raised);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+/* One inline search and result layout. */
+.ui-picker-trigger {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+.ui-picker-trigger:hover:not(:disabled) {
+  background-color: var(--surface-hover);
+}
+.ui-picker-trigger > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-picker svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.ui-picker-field {
+  width: 100%;
+  min-width: 0;
+}
+.ui-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+  width: 100%;
+
+  margin-top: var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: var(--space-sm);
+}
+.ui-picker-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.ui-picker-search input {
+  min-width: 0;
+  flex: 1;
+}
+.ui-picker-search input::-webkit-search-cancel-button {
+  appearance: none;
+}
+.ui-picker-results {
+  max-height: min(320px, 45dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+.ui-picker-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  white-space: normal;
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+  padding: var(--space-md);
+}
+.ui-picker-option > span {
+  min-width: 0;
+}
+.ui-picker-option strong,
+.ui-picker-option small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.ui-picker-option strong {
+  color: var(--text);
+  font-weight: var(--weight-medium);
+}
+.ui-picker-option small {
+  color: var(--text-muted);
+}
+.ui-picker-option[aria-pressed='true'] {
+  background: var(--accent-soft);
+}
+
+/* Menu — trigger plus popup, dismissing on selection, outside click, Escape */
+
+.ui-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.ui-menu-trigger[aria-expanded='true'] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.ui-menu-list {
+  position: fixed;
+  z-index: 30;
+  display: grid;
+  width: max-content;
+  min-width: 176px;
+  gap: 1px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-pop);
+  padding: var(--space-xs);
+}
+
+.ui-menu-list.is-measuring {
+  visibility: hidden;
+}
+
+.ui-menu-item {
+  padding: 0 var(--space-sm);
+  white-space: normal;
+  text-align: left;
+}
+
+.ui-sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.ui-editor-action {
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.ui-editor-action svg {
+  width: 18px;
+  height: 18px;
+}

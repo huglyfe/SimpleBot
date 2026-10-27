@@ -1,0 +1,12 @@
+packages:
+  - server
+  - shared
+  - web
+
+minimumReleaseAge: 1440
+
+allowBuilds:
+  '@google/genai': false
+  better-sqlite3: true
+  esbuild: true
+  protobufjs: false

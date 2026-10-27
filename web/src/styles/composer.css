@@ -1,0 +1,204 @@
+/* The composer bar: notices, staged images, input, and send control. */
+
+.composer-zone {
+  position: relative;
+  display: flex;
+  grid-area: 1 / 1;
+  align-self: end;
+  z-index: 2;
+  pointer-events: none;
+  width: min(100%, calc(var(--composer-width) + 2 * var(--space-md)));
+  margin: 0 auto;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md) var(--space-lg);
+}
+
+@media (max-width: 800px) and (pointer: coarse) {
+  .composer-zone:has(textarea:focus) {
+    padding-bottom: var(--space-xs);
+  }
+}
+
+.composer-zone > * {
+  pointer-events: auto;
+}
+
+.composer-zone .composer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: var(--space-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-composer);
+}
+
+.composer-zone textarea {
+  width: 100%;
+  min-height: 64px;
+  min-width: 0;
+  max-height: 180px;
+  resize: none;
+  overflow-y: auto;
+  border: 0;
+  background: transparent;
+  padding: 6px 3px 6px 7px;
+}
+
+.composer-zone textarea:focus {
+  outline: 0;
+}
+
+/* Notices ---------------------------------------------------------------- */
+
+/* The shared notice, laid out beside its dismiss control. */
+.composer-zone > .ui-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.composer-alert-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.composer-notice-dismiss {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  color: inherit;
+}
+
+.composer-notice-dismiss:hover {
+  background: var(--surface-active);
+}
+
+.composer-notice-dismiss svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Staged images ---------------------------------------------------------- */
+
+.composer-staged {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding: var(--space-xs);
+}
+
+.composer-thumb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-hover);
+}
+
+.composer-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.composer-thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--overlay-scrim);
+  color: var(--on-accent);
+}
+
+.composer-thumb-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Entry row --------------------------------------------------------------- */
+
+.composer-entry {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.composer-actions {
+  display: flex;
+  flex: none;
+  align-self: stretch;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.composer-actions .ui-icon-button {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-card);
+  color: var(--text-muted);
+}
+
+.composer-entry .ui-icon-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.send-button {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  padding: var(--space-sm);
+  color: var(--on-accent);
+  transition:
+    transform var(--motion-fast),
+    opacity var(--motion-fast);
+}
+
+.send-button::before {
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  background: var(--accent);
+  content: '';
+}
+
+.send-button:hover:not(:disabled) {
+  transform: scale(1.04);
+}
+
+.send-button:disabled {
+  opacity: 0.28;
+}
+
+.send-button.is-stop::before {
+  background: var(--danger);
+}
+
+.send-button svg {
+  position: relative;
+  width: 18px;
+}

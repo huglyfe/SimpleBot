@@ -1,0 +1,48 @@
+.DS_Store
+.env
+.env.*
+/config.toml
+/config.json
+/secrets.json
+/.secrets-*.tmp
+
+# Authored operator state, if a root is ever pointed at this checkout. These
+# are anchored: an unanchored `config.json` also hid per-character config
+# anywhere in the tree, which is how an orphan survived unnoticed.
+/characters/*/config.json
+/presets/
+/skills/
+node_modules/
+.pnpm-store/
+dist/
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-shm
+*.sqlite3-wal
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+.pytest-cache/
+__pycache__/
+*.py[cod]
+.dev-root/
+.dev-shots-root/
+.ui-screens/
+dist-package/
+.claude/worktrees/
+.claude/settings.local.json
+
+# Reviewed public export and package archives
+/dist-public/
+*.tgz
+/bots/

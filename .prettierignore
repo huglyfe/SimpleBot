@@ -1,0 +1,12 @@
+.claude/
+.pytest_cache/
+.venv/
+coverage/
+dist/
+dist-package/
+node_modules/
+.pnpm-store/
+playwright-report/
+test-results/
+dist-public/
+.live/

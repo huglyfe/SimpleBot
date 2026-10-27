@@ -1,0 +1,30 @@
+{
+  "persona": {
+    "name": "User",
+    "description": "The person speaking with the bot."
+  },
+  "mainModel": {
+    "provider": "openrouter",
+    "model": "openai/gpt-5.6-luna"
+  },
+  "mainEffort": "off",
+  "useMainModelForSummary": true,
+  "summaryModel": null,
+  "summaryEffort": "off",
+  "tts": {
+    "voice": "af_alloy",
+    "speed": 1
+  },
+  "prompts": {
+    "system": "Today is {{date}}.\n\nRespond naturally and stay consistent with the bot, persona, scenario, and conversation context supplied below.\n",
+    "instructions": "Use the labeled bot, persona, instructions, scenario, summary, depth prompt, and post-history sections as context. Do not mention their structural tags unless the user asks about context diagnostics.",
+    "postHistory": "",
+    "summarization": "Summarize the supplied committed conversation window for future continuity.\n\nRecord important facts, relationship or state changes, open threads, and promises made. Use the prior leaf only as a continuity anchor; do not restate it unless the new window changes or resolves one of its facts. Be concise and factual."
+  },
+  "context": {
+    "thresholdTokens": 10000,
+    "liveTailExchanges": 10,
+    "activeLeafCap": 5,
+    "summaryLengthChars": 6000
+  }
+}

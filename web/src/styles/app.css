@@ -1,0 +1,17 @@
+/**
+ * Stylesheet entry point. Order matters: tokens first, then the reset and
+ * utilities, then shared primitives, then the area stylesheets.
+ *
+ * No file below `tokens.css` may introduce a raw colour or a bare spacing
+ * pixel value.
+ */
+
+@import './tokens.css';
+@import './base.css';
+@import './primitives.css';
+@import './shell.css';
+@import './transcript.css';
+@import './composer.css';
+@import './sheets.css';
+
+@import './privacy.css';

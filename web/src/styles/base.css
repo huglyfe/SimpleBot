@@ -1,0 +1,205 @@
+/* Document reset, typography defaults, shared utility classes, and the two
+   full-page states that live outside the shell (welcome and pairing). */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* One field shape and type size, including button-backed catalog pickers.
+   Keep text entry at 16px to prevent iOS focus zoom. */
+input:not([type='checkbox'], [type='radio'], [type='range']),
+textarea,
+select,
+.ui-picker-trigger {
+  min-height: var(--touch-target);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text);
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-body);
+}
+
+select,
+.ui-picker-trigger {
+  appearance: none;
+  padding-right: var(--space-3xl);
+  background-image: var(--select-chevron);
+  background-position: right var(--space-md) center;
+  background-repeat: no-repeat;
+  background-size: var(--space-lg);
+  text-overflow: ellipsis;
+}
+
+/* Keep the manual resize grip where content sizing is unavailable. */
+textarea {
+  max-height: 40vh;
+  resize: vertical;
+  field-sizing: content;
+}
+
+@supports (field-sizing: content) {
+  textarea {
+    resize: none;
+  }
+}
+
+button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Actions get an outer ring; fields get an accent border and inner glow. */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+input:not([type='checkbox'], [type='radio'], [type='range']):focus-visible,
+textarea:not(.composer-zone textarea):focus-visible,
+select:focus-visible,
+.ui-picker-trigger:focus-visible {
+  border-color: var(--accent);
+  outline: 0;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* A field the user reaches through its wrapper lights the wrapper instead. */
+.composer-zone .composer:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Utilities */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+/* Full-page states */
+
+.welcome,
+.empty-state {
+  display: grid;
+  min-height: 100%;
+  place-content: center;
+  justify-items: center;
+  padding: var(--space-2xl);
+  text-align: center;
+}
+
+.welcome p {
+  color: var(--text-muted);
+}
+
+.brand-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: var(--radius-card);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--text-headline);
+  font-weight: var(--weight-bold);
+}
+
+.bot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.bot-grid button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.bot-grid button:hover {
+  background: var(--surface-hover);
+}
+
+/* Pairing */
+
+.auth-page {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  padding: var(--space-lg);
+}
+
+.auth-card {
+  display: grid;
+  width: min(410px, 100%);
+  gap: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-sheet);
+  padding: var(--space-xl);
+}
+
+.auth-card h1,
+.auth-card p {
+  margin: 0;
+}
+
+.auth-card label {
+  display: grid;
+  gap: var(--space-xs);
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}

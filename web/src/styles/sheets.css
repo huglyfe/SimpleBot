@@ -1,0 +1,580 @@
+/**
+ * The settings surface. Every sheet renders inside the `ui-sheet` primitive,
+ * so this file styles only what goes in the body: sections, labeled rows,
+ * capability lists, grant toggles, and the shared editor actions.
+ */
+
+/* Sections and rows ------------------------------------------------------ */
+
+.settings-section {
+  display: grid;
+  gap: var(--space-md);
+  border-top: 1px solid var(--border);
+  padding: var(--space-md) 0;
+}
+
+.settings-section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.settings-section > header {
+  display: grid;
+  gap: 2px;
+}
+
+.settings-section > header h3 {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+}
+
+.settings-section > header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+}
+
+.settings-section-body {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.settings-group {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-md);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Sliders fill the shared control column and keep their readout adjacent. */
+.settings-slider {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.settings-slider .ui-range {
+  flex: 1;
+}
+
+.settings-slider output {
+  flex: 0 0 5ch;
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.settings-subsection {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.settings-subsection + .settings-subsection {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-lg);
+}
+
+.settings-subsection h4 {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+}
+
+.bot-artwork-trigger {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.bot-artwork-trigger img {
+  display: block;
+  object-fit: contain;
+  object-position: top center;
+}
+
+.bot-card {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: start;
+}
+
+.bot-card-details {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.bot-artwork-viewer {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+}
+
+.bot-artwork-viewer img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: var(--radius-card);
+  object-fit: contain;
+}
+
+.provider-connection {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  margin: 0;
+  padding: var(--space-md);
+}
+
+.provider-connection legend {
+  padding: 0 var(--space-xs);
+  font-weight: var(--weight-medium);
+}
+
+/* Capabilities and grants ----------------------------------------------------------------- */
+
+.capability-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capability-groups {
+  display: grid;
+  gap: 2px;
+}
+
+.capability-group {
+  min-width: 0;
+}
+
+.capability-toggle {
+  display: flex;
+  width: 100%;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  border-radius: var(--radius-control);
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
+}
+
+.capability-toggle:hover {
+  background: var(--surface-hover);
+}
+
+.capability-toggle strong {
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+}
+
+.capability-toggle .count {
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+}
+
+.capability-group .capability-list {
+  gap: 1px;
+  margin-top: 2px;
+}
+
+.grant-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  border-radius: var(--radius-control);
+  padding: var(--space-xs) var(--space-sm);
+  cursor: pointer;
+}
+
+.grant-row:hover {
+  background: var(--surface-hover);
+}
+
+.grant-row > span {
+  display: grid;
+  min-width: 0;
+  justify-items: start;
+  gap: 1px;
+}
+
+.grant-row code {
+  max-width: 100%;
+  font-size: var(--text-label);
+  overflow-wrap: anywhere;
+}
+
+.grant-row small {
+  max-width: 100%;
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+  line-height: var(--leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.grant-unknown {
+  display: grid;
+  gap: var(--space-xs);
+  border-radius: var(--radius-control);
+  background: var(--danger-soft);
+  padding: var(--space-md);
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
+/* Record lists ----------------------------------------------------------- */
+
+/**
+ * One row shape for every panel that lists stored records beside an editor: a
+ * summary that truncates and a fixed set of row actions. Schedules, session
+ * variables, leaves, and history results are the same list of the same kind
+ * of thing, so they are the same rows rather than four that drift apart.
+ */
+
+.record-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.record-row {
+  position: relative;
+}
+.record-row:not(.is-action) {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+}
+.record-select.ui-button {
+  display: block;
+  width: 100%;
+  padding: var(--space-sm);
+  border-radius: var(--radius-control);
+  text-align: left;
+  white-space: normal;
+}
+.record-row.is-removable .record-select {
+  padding-right: calc(var(--touch-target) + var(--space-sm));
+}
+.record-select > strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+.record-preview,
+.record-detail {
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-regular);
+  overflow-wrap: anywhere;
+}
+.record-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.record-detail {
+  display: grid;
+}
+.record-remove {
+  position: absolute;
+  top: 50%;
+  right: var(--space-xs);
+  transform: translateY(-50%);
+}
+.record-add.ui-button.is-quiet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+}
+.record-add strong {
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+}
+
+.provider-summary {
+  display: flex;
+  gap: var(--space-xs);
+}
+.provider-url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.provider-summary > :last-child {
+  flex: none;
+}
+
+/* Tags ------------------------------------------------------------------- */
+
+.tag {
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+  padding: 1px var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+}
+
+.tag.is-unreachable {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+/* Repeatable lists ------------------------------------------------------- */
+
+.repeatable {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.repeatable-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-sm);
+}
+
+.repeatable-row input {
+  min-width: 0;
+  width: 100%;
+}
+
+/* A key/value entry names itself in a column of its own. */
+.repeatable-row.is-pair {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.repeatable > .ui-button {
+  justify-self: start;
+}
+
+.login-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Phone ------------------------------------------------------------------ */
+
+@media (max-width: 680px) {
+  .repeatable .ui-button {
+    min-height: var(--touch-target);
+  }
+
+  .repeatable-row.is-pair {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .repeatable-row.is-pair > input:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .login-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The engine's own value sits beside the field, so a number the operator did
+   not choose never looks like one they did. */
+.settings-default {
+  color: var(--text-faint);
+  font-size: var(--text-micro);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.settings-reset {
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+}
+
+.settings-reset:hover {
+  color: var(--accent-hover);
+}
+
+/* One focused edit surface; the owner stays mounted behind it. */
+.focused-editor .ui-sheet {
+  height: min(760px, calc(100dvh - var(--space-xl) * 2));
+}
+.focused-editor .ui-sheet-body {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--space-lg);
+}
+.focused-editor-form {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.focused-editor-form > .settings-group {
+  grid-auto-rows: min-content;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+}
+.focused-editor-form textarea {
+  min-height: 12rem;
+  max-height: none;
+  resize: vertical;
+}
+.focused-editor-form > .settings-group > textarea:only-child {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  resize: none;
+}
+@media (max-width: 800px) {
+  .focused-editor .ui-sheet {
+    top: var(--ui-editor-top, 0px);
+    height: var(--ui-editor-height, 100dvh);
+    bottom: auto;
+  }
+}
+
+.context-facts {
+  display: grid;
+  gap: var(--space-lg);
+  margin: 0;
+}
+.context-facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+.context-facts dt {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+.context-facts dd {
+  margin: 0;
+  text-align: right;
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+.context-compact {
+  width: 100%;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.focused-editor-form > .settings-group:has(textarea) {
+  display: flex;
+  flex-direction: column;
+}
+.focused-editor-form .ui-field:has(textarea) {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-height: 12rem;
+  flex-direction: column;
+}
+.focused-editor-form .ui-field:has(textarea) .ui-field-control {
+  flex: 1;
+  display: flex;
+}
+.focused-editor-form .ui-field textarea {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  resize: none;
+}
+
+@container (max-width: 480px) {
+  .provider-connection .ui-field:not(:has(.ui-switch, input[type='number'])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .provider-connection .ui-field-control {
+    max-width: none;
+    justify-content: flex-start;
+  }
+  .provider-connection .ui-field > .ui-hint {
+    grid-column: 1;
+  }
+}
+
+.dependency-available,
+.provider-model-count {
+  color: var(--success);
+}
+
+.preset-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-sm);
+}
+
+.focused-editor-form .ui-field:has(.skill-description) {
+  flex: none;
+  min-height: 0;
+}
+.focused-editor-form .ui-field .skill-description {
+  height: 5rem;
+  min-height: 5rem;
+  overflow-y: auto;
+}
+
+/* Creation is a short form, not a full-height writing editor. */
+.focused-editor .ui-sheet:has(.new-bot-fields) {
+  height: auto;
+  max-height: var(--ui-editor-height, calc(100dvh - var(--space-xl) * 2));
+}
+
+.new-bot-fields {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.new-bot-fields .ui-field {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.new-bot-fields .ui-field-control {
+  max-width: none;
+}
+
+.bot-file-action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.bot-file-action .ui-hint {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

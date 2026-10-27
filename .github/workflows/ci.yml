@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The gates of `pnpm check`, run as independent jobs. Each task is
+  # self-contained -- every one that needs the shared package builds it -- so
+  # the chain `pnpm check` runs locally is serial only because one shell is
+  # serial, not because the gates depend on each other. Wall clock here is the
+  # slowest gate rather than their sum. Keep this list equal to the tasks in
+  # the root `check` script.
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      # One failing gate must not hide the others; a red run should report
+      # every gate that is actually red.
+      fail-fast: false
+      matrix:
+        task:
+          [
+            format:check,
+            lint,
+            typecheck,
+            legal:check,
+            export:check,
+            test,
+            build,
+          ]
+    name: check (${{ matrix.task }})
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ${{ matrix.task }}
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm test:acceptance
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: browser-failure-traces
+          path: /tmp/simplebot-playwright-results
+          retention-days: 3
+
+  node24:
+    name: Node 24 startup and operations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node --import tsx --test server/src/cli.test.ts server/src/startup.test.ts
+      - name: Built CLI initializes and checks an empty installation
+        run: |
+          export SIMPLEBOT_ROOT="$(mktemp -d)"
+          node bin/simplebot.js init
+          node bin/simplebot.js doctor

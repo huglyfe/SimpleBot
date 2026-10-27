@@ -1,0 +1,55 @@
+{
+  "name": "simplebot",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "A self-hosted conversation engine with persistent context and explicit tools.",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@11.24.0+sha512.bd27e345e976dcb0be0b7a1228217b049a817e21b1f355c90dbe7dc46671895a8bc1e6d06c24554505ea93ea0b45f489a27ec1bfbc8de6a9659fca0f16fa0000",
+  "engines": {
+    "node": ">=24 <27",
+    "pnpm": ">=11.9 <12"
+  },
+  "scripts": {
+    "build": "pnpm --filter @simplebot/shared build && pnpm --filter @simplebot/web build && pnpm --filter @simplebot/server build",
+    "package": "pnpm legal:check && pnpm build && node --import tsx server/scripts/package.ts",
+    "auth:pair": "node bin/simplebot.js pair",
+    "auth:key": "node bin/simplebot.js pair key",
+    "backup": "node bin/simplebot.js backup",
+    "check": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm legal:check && pnpm export:check && pnpm test && pnpm build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "doctor": "node bin/simplebot.js doctor",
+    "lint": "pnpm --filter @simplebot/shared build && eslint .",
+    "restore": "node bin/simplebot.js restore",
+    "pretest": "pnpm --filter @simplebot/shared build",
+    "test": "pnpm --filter @simplebot/shared test && pnpm --filter @simplebot/server test && pnpm --filter @simplebot/web test",
+    "test:acceptance": "pnpm build && playwright test",
+    "typecheck": "pnpm --filter @simplebot/shared build && pnpm --filter @simplebot/shared typecheck && tsc --noEmit && pnpm --filter @simplebot/web typecheck && pnpm --filter @simplebot/server typecheck",
+    "legal:notices": "node --import tsx server/scripts/notices.ts",
+    "export:public": "node --import tsx server/scripts/export.ts",
+    "export:check": "node --import tsx server/scripts/export.ts --check",
+    "legal:check": "node --import tsx server/scripts/notices.ts --check",
+    "package:brew": "node --import tsx server/scripts/homebrew.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "@types/node": "^26.6.5",
+    "eslint": "10.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huglyfe/simplebot.git"
+  },
+  "homepage": "https://github.com/huglyfe/simplebot",
+  "bugs": {
+    "url": "https://github.com/huglyfe/simplebot/issues"
+  },
+  "author": "huglyfe"
+}

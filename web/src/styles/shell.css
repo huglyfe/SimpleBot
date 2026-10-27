@@ -1,0 +1,372 @@
+/* Application frame: drawer, header, and the bot/session navigation. */
+
+.shell-root {
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.drawer-slot {
+  position: relative;
+  width: var(--ui-drawer-width, 0px);
+  flex: none;
+  overflow: hidden;
+}
+
+.drawer-slot.is-collapsed {
+  width: 0;
+}
+
+.drawer-resizer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 21;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.drawer-resizer:hover,
+.drawer-resizer:active,
+.drawer-resizer:focus-visible {
+  border-right: 2px solid var(--accent);
+}
+
+.drawer-resizer:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.shell-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.shell-content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The shell's own failure rides the shared notice, inset from the frame. */
+.shell-main > .ui-notice,
+.shell-content > .ui-notice {
+  z-index: 11;
+  margin: calc(var(--header-height) + var(--space-sm)) var(--space-md) 0;
+}
+
+/* Overlap the existing scroll area without another positioned wrapper. */
+.shell-header {
+  position: sticky;
+  top: 0;
+  flex: none;
+  height: var(--header-height);
+  margin-bottom: calc(var(--header-height) * -1);
+  z-index: 12;
+  display: grid;
+  min-height: var(--header-height);
+  grid-template-columns: 92px minmax(0, 1fr) 92px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  padding: 0 var(--space-sm);
+}
+
+.header-side {
+  display: flex;
+  align-items: center;
+}
+
+.header-side.is-right {
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.header-center {
+  display: flex;
+  min-width: 0;
+  justify-content: center;
+}
+
+.bot-identity {
+  display: flex;
+  min-width: 0;
+  max-width: 46vw;
+  min-height: var(--touch-target);
+  align-items: center;
+  gap: var(--space-sm);
+  border-radius: var(--radius-control);
+  padding: var(--space-xs) var(--space-sm);
+  font-weight: var(--weight-medium);
+}
+
+.bot-identity:hover {
+  background: var(--surface-hover);
+}
+
+/* Drawer */
+
+.sidebar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  width: var(--ui-drawer-width, 0px);
+  height: 100dvh;
+  min-width: var(--ui-drawer-width, 0px);
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  /* The rail sits under the canvas, so the split survives without the border. */
+  background: var(--surface-sunken);
+}
+
+.sidebar.is-overlay {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(86vw, 340px);
+  min-width: min(86vw, 340px);
+  transform: translateX(0);
+  box-shadow: var(--shadow-sheet);
+}
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-sm) var(--space-xs);
+}
+
+.drawer-search {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+}
+
+.drawer-search > svg {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.drawer-search input {
+  width: 100%;
+  background: var(--surface);
+  padding-left: var(--space-2xl);
+}
+
+.sidebar-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px var(--space-sm) var(--space-sm);
+}
+
+.drawer-add-bot {
+  margin-top: var(--space-sm);
+  display: flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  gap: var(--space-sm);
+  border-radius: var(--radius-control);
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.drawer-add-bot:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.drawer-add-bot > svg {
+  width: 18px;
+}
+
+.sidebar > .ui-hint {
+  margin: 0 var(--space-sm) var(--space-sm);
+}
+
+/* Bot groups */
+
+.bot-group {
+  margin: var(--space-xs) 0 var(--space-lg);
+}
+
+.bot-heading {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.bot-toggle {
+  display: grid;
+  min-width: 0;
+  min-height: var(--touch-target);
+  flex: 1;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  border-radius: var(--radius-control);
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
+}
+
+.bot-toggle:hover {
+  background: var(--surface-hover);
+}
+
+.bot-toggle strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-label);
+  font-weight: var(--weight-medium);
+}
+
+.bot-toggle .count {
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+}
+
+/* The `+` and `⋯` actions are quieter than the group they sit beside. */
+.bot-heading .ui-icon-button {
+  opacity: 0.72;
+}
+
+.bot-heading .ui-icon-button:hover,
+.bot-heading .ui-menu-trigger[aria-expanded='true'] {
+  opacity: 1;
+}
+
+/* Sessions */
+
+.session-list {
+  display: grid;
+  gap: 1px;
+  margin: 2px 0 0 var(--space-md);
+}
+
+.session-row {
+  position: relative;
+  display: block;
+  border-radius: var(--radius-control);
+  background: transparent;
+}
+
+.session-row:hover {
+  background: var(--surface-hover);
+}
+
+.session-row.is-active {
+  background: var(--surface-active);
+}
+
+.session-main {
+  display: grid;
+  width: 100%;
+  min-height: var(--touch-target);
+  align-content: center;
+  gap: 2px;
+  padding: var(--space-sm) var(--space-3xl) var(--space-sm) var(--space-sm);
+  text-align: left;
+}
+
+/* One title line, plus a search snippet only while a search is showing one. */
+.session-main strong,
+.session-main span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.session-main strong {
+  font-size: var(--text-label);
+  font-weight: var(--weight-regular);
+}
+
+.session-row.is-active .session-main strong {
+  font-weight: var(--weight-medium);
+}
+
+.session-main span {
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+}
+
+/* The row's action menu rides the row; the row itself owns the hover state. */
+.session-menu {
+  position: absolute;
+  inset-block: 0;
+  right: 2px;
+  display: grid;
+}
+
+/* Full row height so the target is wherever on the right edge you aim. */
+.session-menu .ui-menu-trigger {
+  height: 100%;
+  opacity: 0;
+}
+
+.session-row:hover .session-menu .ui-menu-trigger,
+.session-row.is-active .session-menu .ui-menu-trigger,
+.session-menu .ui-menu-trigger:focus-visible,
+.session-menu .ui-menu-trigger[aria-expanded='true'] {
+  opacity: 1;
+}
+
+/* Touch has no hover, so the affordance must always be visible there. */
+@media (hover: none) {
+  .session-menu .ui-menu-trigger {
+    opacity: 1;
+  }
+}
+
+/* Equal destinations, with room for both the icon and its label. */
+.sidebar-footer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: none;
+  gap: var(--space-xs);
+  border-top: 1px solid var(--border);
+  padding: var(--space-sm);
+}
+
+.sidebar-footer .ui-icon-button {
+  width: 100%;
+  height: auto;
+  min-height: var(--touch-target);
+  align-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+  border-radius: var(--radius-control);
+}
+
+.sidebar-footer span {
+  font-size: var(--text-micro);
+  line-height: var(--leading-tight);
+}
+
+@media (max-width: 800px) {
+  .shell-header {
+    padding: 0 var(--space-xs);
+  }
+
+  .bot-identity {
+    max-width: 42vw;
+  }
+
+  .sidebar-footer span {
+    display: none;
+  }
+}
