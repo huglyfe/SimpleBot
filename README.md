@@ -6,7 +6,14 @@ SimpleBot keeps long-running conversations organized around configurable bots. I
 
 > **Public alpha.** Expect bugs and breaking changes. Back up before updating. Database upgrades are not automatic; an incompatible database is refused. Intended for one operator on a private host, with no production support guarantee.
 
-![SimpleBot conversation interface](docs/images/conversation.png)
+![SimpleBot desktop conversation interface](docs/images/conversation.png)
+
+<details>
+<summary>Phone layout</summary>
+
+<img src="docs/images/conversation-phone.png" alt="SimpleBot phone conversation interface" width="320">
+
+</details>
 
 _Synthetic workshop-planning conversation; no personal data or live provider output._
 

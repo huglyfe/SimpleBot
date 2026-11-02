@@ -43,6 +43,7 @@ docs/FRONTEND_REQUIREMENTS.md
 docs/MACROS.md
 docs/USER_GUIDE.md
 docs/images/conversation.png
+docs/images/conversation-phone.png
 eslint.config.js
 legal/THIRD-PARTY-NOTICES.txt
 legal/upstream/MIT-terms.txt
