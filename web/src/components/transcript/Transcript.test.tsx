@@ -509,11 +509,8 @@ describe('Transcript', () => {
     expect(document.querySelector('.msg-row.is-user em')).toBeNull();
     expect(document.querySelector('.msg-row.is-user code')).toBeNull();
 
-    // The bot's reply keeps narration and dialogue highlighting.
+    // The bot's reply renders as Markdown.
     expect(document.querySelector('.msg-row.is-assistant em')).not.toBeNull();
-    expect(
-      document.querySelector('.msg-row.is-assistant .msg-dialogue'),
-    ).not.toBeNull();
   });
 
   it('renders a trailing system error inside its canonical response', () => {
@@ -622,4 +619,95 @@ it('keeps the opened variant as the save target when the selected variant refres
   expect(update).toHaveBeenCalledWith('/variants/variant-a/source', 'PATCH', {
     source: 'Edited original',
   });
+});
+
+it('collapses applied effects after acceptance while retaining pending and problem outcomes in order', async () => {
+  const user = userEvent.setup();
+  const effect = (
+    id: string,
+    state: StoredVariant['effects'][number]['state'],
+    ordinal: number,
+  ): StoredVariant['effects'][number] => ({
+    id,
+    ordinal,
+    state,
+    type: 'todo_update',
+    arguments: { title: id },
+    result: null,
+  });
+  const props = {
+    sessionId: 'session-1',
+    ttsConfigured: false,
+    botName: 'Echo',
+    update: vi.fn<TranscriptUpdate>(async () => undefined),
+    regenerate: vi.fn(),
+    onAction: vi.fn(),
+    busy: false,
+  };
+  const position = {
+    ...greeting,
+    variant: {
+      ...greeting.variant,
+      effects: [effect('success', 'candidate', 0)],
+    },
+  };
+  const { rerender } = render(
+    <AssistantMessageRow {...props} position={position} />,
+  );
+  expect(screen.getByText('{"title":"success"}')).toBeVisible();
+  rerender(
+    <AssistantMessageRow
+      {...props}
+      position={{
+        ...position,
+        locked: true,
+        variant: {
+          ...position.variant,
+          effects: [effect('success', 'applied', 0)],
+        },
+      }}
+    />,
+  );
+  expect(screen.queryByText('{"title":"success"}')).not.toBeInTheDocument();
+  const toggle = screen.getByRole('button', { name: /1 change applied/u });
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await user.click(toggle);
+  expect(screen.getByText('{"title":"success"}')).toBeVisible();
+  await user.click(toggle);
+  rerender(
+    <AssistantMessageRow
+      {...props}
+      position={{
+        ...position,
+        variant: {
+          ...position.variant,
+          effects: [
+            effect('success', 'applied', 0),
+            effect('pending', 'candidate', 1),
+            effect('applying', 'accepted', 2),
+            effect('failure', 'failed', 3),
+            effect('uncertain', 'unresolved', 4),
+          ],
+        },
+      }}
+    />,
+  );
+  for (const name of ['pending', 'applying', 'failure', 'uncertain'])
+    expect(screen.getByText(`{"title":"${name}"}`)).toBeVisible();
+  expect(screen.queryByText('{"title":"success"}')).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Mark resolved' }));
+  expect(props.onAction).toHaveBeenCalledWith(
+    '/effects/uncertain/resolve',
+    'POST',
+  );
+  await user.click(toggle);
+  expect(
+    within(screen.getByRole('list', { name: 'Response effects' }))
+      .getAllByRole('listitem')
+      .map((item) => item.querySelector('code')?.textContent),
+  ).toEqual(
+    ['success', 'pending', 'applying', 'failure', 'uncertain'].map((title) =>
+      JSON.stringify({ title }),
+    ),
+  );
 });

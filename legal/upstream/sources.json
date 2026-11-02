@@ -1,11 +1,11 @@
 {
-  "@earendil-works/pi-ai@1.3.0": {
+  "@earendil-works/pi-ai@1.4.0": {
     "file": "pi.txt",
-    "source": "https://github.com/earendil-works/pi/blob/v1.3.0/LICENSE"
+    "source": "https://github.com/earendil-works/pi/blob/v1.4.0/LICENSE"
   },
-  "@earendil-works/pi-telemetry@1.3.0": {
+  "@earendil-works/pi-telemetry@1.4.0": {
     "file": "pi.txt",
-    "source": "https://github.com/earendil-works/pi/blob/v1.3.0/LICENSE"
+    "source": "https://github.com/earendil-works/pi/blob/v1.4.0/LICENSE"
   },
   "abstract-logging@2.0.1": {
     "file": "MIT-terms.txt",
@@ -19,17 +19,17 @@
     "file": "standardwebhooks.txt",
     "source": "https://github.com/standard-webhooks/standard-webhooks/blob/b4d2c14fc5b4ccff3ff271e3b087dff812254c59/libraries/LICENSE"
   },
-  "@aws-sdk/credential-provider-http@3.972.76": {
+  "@aws-sdk/credential-provider-http@3.972.82": {
     "file": "aws-sdk.txt",
-    "source": "Package declares Apache-2.0; license text from https://github.com/aws/aws-sdk-js-v3/blob/main/LICENSE (retrieved 2026-10-14)."
+    "source": "Package declares Apache-2.0; license text from https://github.com/aws/aws-sdk-js-v3/blob/main/LICENSE (retrieved 2026-11-01)."
   },
-  "@aws-sdk/credential-provider-login@3.972.81": {
+  "@aws-sdk/credential-provider-login@3.972.87": {
     "file": "aws-sdk.txt",
-    "source": "Package declares Apache-2.0; license text from https://github.com/aws/aws-sdk-js-v3/blob/main/LICENSE (retrieved 2026-10-14)."
+    "source": "Package declares Apache-2.0; license text from https://github.com/aws/aws-sdk-js-v3/blob/main/LICENSE (retrieved 2026-11-01)."
   },
-  "@aws-sdk/nested-clients@3.997.48": {
+  "@aws-sdk/nested-clients@3.997.54": {
     "file": "aws-sdk.txt",
-    "source": "Package declares Apache-2.0; license text from https://github.com/aws/aws-sdk-js-v3/blob/main/LICENSE (retrieved 2026-10-14)."
+    "source": "Package declares Apache-2.0; license text from https://github.com/aws/aws-sdk-js-v3/blob/main/LICENSE (retrieved 2026-11-01)."
   },
   "data-uri-to-buffer@4.0.1": {
     "file": "data-uri-to-buffer.txt",

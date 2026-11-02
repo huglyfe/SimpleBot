@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { todoSchema } from './todos.js';
+import { clockFormatSchema } from './time.js';
 import { slug } from './slug.js';
 
 export const REASONING_LEVELS = [
@@ -44,6 +45,10 @@ export const bootstrapSchema = z.strictObject({
   /** The running distribution's version, so no client spells one of its own. */
   version: z.string().min(1),
   ttsConfigured: z.boolean(),
+  time: z.strictObject({
+    timezone: z.string().min(1),
+    clockFormat: clockFormatSchema,
+  }),
   bots: z.array(
     z.strictObject({
       slug,

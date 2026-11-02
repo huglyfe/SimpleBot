@@ -1,6 +1,8 @@
 import type { ReactElement, Ref } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { PRODUCT_NAME, type Bootstrap } from '@simplebot/shared';
 
+import { getPresetList } from '../../api.js';
 import { MenuIcon, MessageIcon, SlidersIcon } from '../../icons.js';
 import { Avatar } from '../primitives/Avatar.js';
 import { IconButton } from '../primitives/IconButton.js';
@@ -9,6 +11,8 @@ type Bot = Bootstrap['bots'][number];
 
 export interface ConversationHeaderProps {
   bot: Bot | undefined;
+  /** The active conversation's preset, shown beside the bot's name. */
+  presetSlug: string | undefined;
   /** True when a conversation is selected; the identity button needs one. */
   conversationActive: boolean;
   drawerOpen: boolean;
@@ -27,6 +31,7 @@ export interface ConversationHeaderProps {
  */
 export function ConversationHeader({
   bot,
+  presetSlug,
   conversationActive,
   drawerOpen,
   onToggleDrawer,
@@ -35,6 +40,12 @@ export function ConversationHeader({
   onOpenPreset,
   toggleRef,
 }: ConversationHeaderProps): ReactElement {
+  const presets = useQuery({
+    queryKey: ['presets'],
+    queryFn: getPresetList,
+    enabled: conversationActive && presetSlug !== undefined,
+  });
+  const preset = presets.data?.find((item) => item.slug === presetSlug);
   return (
     <header className="shell-header">
       <div className="header-side">
@@ -54,10 +65,16 @@ export function ConversationHeader({
           <button
             type="button"
             className="bot-identity"
+            aria-label={bot.name}
             onClick={onOpenBotSheet}
           >
-            <Avatar name={bot.name} artworkUrl={bot.avatarUrl} size={32} />
-            <span>{bot.name}</span>
+            <Avatar name={bot.name} artworkUrl={bot.avatarUrl} size={24} />
+            <strong>{bot.name}</strong>
+            {presetSlug === undefined ? null : (
+              <span className="bot-identity-preset">
+                {preset?.name ?? presetSlug}
+              </span>
+            )}
           </button>
         ) : (
           <strong>{PRODUCT_NAME}</strong>

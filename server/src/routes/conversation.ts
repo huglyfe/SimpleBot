@@ -243,6 +243,18 @@ export function registerConversationRoutes(
   );
 
   app.post(
+    '/api/sessions/:sessionId/leaves/:leafId/regenerate',
+    async (request, reply) => {
+      const { sessionId, leafId } = request.params as {
+        sessionId: string;
+        leafId: string;
+      };
+      await ctx.attempts.regenerateLeaf(sessionId, leafId);
+      return reply.code(204).send();
+    },
+  );
+
+  app.post(
     '/api/sessions/:sessionId/attachments',
     { bodyLimit: UPLOAD_BODY_LIMIT },
     async (request, reply) => {

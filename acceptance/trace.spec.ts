@@ -17,7 +17,7 @@ async function expectTrace(row: Locator, variant: number, completed: boolean) {
 const viewport = { width: 390, height: 844 };
 test(`ordered reasoning and tools survive streaming, swipe selection, and reload at ${String(viewport.width)}px`, async ({
   page,
-}, testInfo) => {
+}) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
@@ -96,7 +96,6 @@ test(`ordered reasoning and tools survive streaming, swipe selection, and reload
       () => document.documentElement.scrollWidth - window.innerWidth,
     ),
   ).toBe(0);
-  await page.screenshot({ path: testInfo.outputPath('ordered-trace.png') });
   await page.setViewportSize({ width: 1280, height: 800 });
   await expectTrace(row, 1, true);
   expect(

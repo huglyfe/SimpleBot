@@ -1,3 +1,4 @@
+import { useTimePreferences, formatTime } from '../../lib/format.js';
 import { type ReactElement } from 'react';
 import type { ScheduleWrite, SessionContext } from '@simplebot/shared';
 
@@ -14,16 +15,16 @@ function emptyDraft(): ScheduleWrite {
 }
 
 export function SchedulesPanel({
-  timezone,
   schedules,
   onSave,
   onDelete,
 }: {
-  timezone: string;
   schedules: SessionContext['schedules'];
   onSave: (schedule: ScheduleWrite) => Promise<void>;
   onDelete: (scheduleId: string) => Promise<void>;
 }): ReactElement {
+  const time = useTimePreferences();
+  const { timezone } = time;
   function fields(
     draft: ScheduleWrite,
     change: (next: ScheduleWrite) => void,
@@ -100,7 +101,7 @@ export function SchedulesPanel({
                 {schedule.nextRunError ??
                   (schedule.nextRunAt === null
                     ? 'No next run'
-                    : `Next run ${new Date(schedule.nextRunAt).toLocaleString(undefined, { timeZone: timezone, timeZoneName: 'short' })}`)}
+                    : `Next run ${new Date(schedule.nextRunAt).toLocaleDateString(undefined, { timeZone: timezone })} ${formatTime(schedule.nextRunAt, time)}`)}
               </span>
             </>
           }

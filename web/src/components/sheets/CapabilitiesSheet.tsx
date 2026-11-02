@@ -18,7 +18,6 @@ import { errorMessage } from '../../lib/errorMessage.js';
 import { SkillEditors } from './SkillEditors.js';
 import { DependencyEditors } from './DependencyEditors.js';
 import { AuthoredForm } from './AuthoredForm.js';
-import { SecretsSection } from './Secrets.js';
 import { Section } from './Section.js';
 import { useAuthoredEditor, type AuthoredQuery } from './useAuthoredEditor.js';
 
@@ -132,7 +131,7 @@ function CapabilitiesEditor({
       <SkillEditors skills={skills} />
       <Section
         title="External dependencies"
-        description="MCP and Memory reconnect; Docker targets are re-inspected without restarting containers."
+        description="MCP and Memory reconnect; Docker targets are re-inspected without restarting containers. Saved secrets live in Providers & Keys."
       >
         <DependencyEditors
           value={editor.value}
@@ -140,7 +139,6 @@ function CapabilitiesEditor({
           onChange={editor.change}
         />
       </Section>
-      <SecretsSection />
     </AuthoredForm>
   );
 }

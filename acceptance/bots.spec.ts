@@ -48,13 +48,7 @@ test('creates and edits a bot, starts empty, sends and reopens its first convers
     .getByLabel('System prompt', { exact: true })
     .fill('Help me keep things simple.');
   await instructions.getByRole('button', { name: 'Done', exact: true }).click();
-  for (const width of [1280, 390]) {
-    await page.setViewportSize({ width, height: 844 });
-    await page.screenshot({
-      animations: 'disabled',
-      path: `/tmp/simplebot-created-${String(width)}.png`,
-    });
-  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await bot.getByRole('button', { name: 'Save', exact: true }).click();
   await bot.getByRole('button', { name: 'Close panel', exact: true }).click();
   if (await drawer.isVisible()) await drawer.click();
@@ -137,10 +131,6 @@ for (const width of [1280, 390]) {
       await expect(create.getByText('Browser Card.json')).toBeVisible();
       await page.setViewportSize({ width, height: 844 });
     }
-    await page.screenshot({
-      animations: 'disabled',
-      path: `/tmp/simplebot-new-bot-${String(width)}.png`,
-    });
     await create
       .getByRole('button', { name: 'Create bot', exact: true })
       .click();
@@ -182,7 +172,6 @@ for (const width of [1280, 390]) {
         alternate_greetings: [],
       },
     });
-    await page.screenshot({ path: `/tmp/simplebot-card-${String(width)}.png` });
   });
 }
 
@@ -293,10 +282,6 @@ test('bot image changes save immediately across the panel, header, drawer, and r
         (element) => element.scrollWidth <= element.clientWidth,
       ),
     ).toBe(true);
-    await page.screenshot({
-      animations: 'disabled',
-      path: `/tmp/simplebot-image-${String(width)}.png`,
-    });
   }
   await panel.getByRole('button', { name: 'Discard', exact: true }).click();
   await expect(panel.getByLabel('Name', { exact: true })).toHaveValue('Echo');

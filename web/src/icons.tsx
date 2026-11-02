@@ -57,10 +57,10 @@ export const ChevronUpIcon = (props: IconProps) => (
     <path d="m6 15 6-6 6 6" />
   </Icon>
 );
-export const SaveIcon = (props: IconProps) => (
+export const UndoIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2Z" />
-    <path d="M7 3v6h10V3M7 21v-8h10v8" />
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
   </Icon>
 );
 export const CheckIcon = (props: IconProps) => (

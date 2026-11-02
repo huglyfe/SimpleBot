@@ -227,6 +227,9 @@ function RootSettingsEditor({
       });
       void Promise.all([
         cache.invalidateQueries({ queryKey: ['bootstrap'] }),
+        ...(section === 'application'
+          ? [cache.invalidateQueries({ queryKey: ['context'] })]
+          : []),
         ...(section === 'providers'
           ? [cache.invalidateQueries({ queryKey: ['provider-models'] })]
           : []),

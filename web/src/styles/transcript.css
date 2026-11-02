@@ -1,16 +1,4 @@
-/**
- * Transcript area: history search, message rows, prose, and effects.
- *
- * Two rules here are the layout half of named defect fixes:
- *
- * - `.msg-column` fills from the top (`justify-content: flex-start`). The
- *   pre-fix column pinned to `flex-end`, which is what floated a short
- *   conversation at the bottom of a void. Pinning to the live edge is the
- *   scroll container's job, not the column's.
- * - `.msg-row.is-user .msg-surface` is sized to its content and the control
- *   bar sits outside it, so the user bubble is no longer inflated by a
- *   stacked Edit affordance. Message editing uses the shared sheet.
- */
+/* Transcript area: message rows, prose, reasoning, and effects. */
 
 .conversation {
   display: grid;
@@ -130,22 +118,13 @@
   max-width: min(78%, 640px);
 }
 
-/**
- * The operator speaks in a bubble; the bot speaks in prose.
- *
- * A bubble is a good container for a short turn and a bad one for a long
- * reply: it caps the measure, fights multi-paragraph rhythm, and boxes
- * markdown that already has its own structure. So the assistant surface is
- * unboxed and runs the full column. Alignment is the whole distinction: one
- * bot speaks in a conversation, so a per-message portrait repeated down
- * the transcript identified nobody and only narrowed the reply.
- */
+/* The operator speaks in a tinted bubble; the bot speaks in unboxed prose
+   across the full column, with no per-message portrait. */
 .msg-row.is-user .msg-surface {
   border-radius: var(--radius-bubble);
-  border-bottom-right-radius: var(--radius-xs);
-  background: var(--accent);
-  padding: 11px var(--space-md);
-  color: var(--on-accent);
+  border-bottom-right-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  padding: 10px var(--space-lg);
 }
 
 .msg-row.is-assistant .msg-surface {
@@ -223,7 +202,6 @@
 .msg-markdown h3,
 .msg-markdown h4 {
   margin: var(--space-lg) 0 var(--space-sm);
-  color: var(--syntax-heading);
   font-size: var(--text-body);
   font-weight: var(--weight-bold);
   line-height: var(--leading-snug);
@@ -241,18 +219,18 @@
 }
 
 .msg-markdown li::marker {
-  color: var(--text-faint);
+  color: var(--prose-accent);
 }
 
 .msg-markdown blockquote {
   margin: var(--space-md) 0;
-  border-left: 2px solid var(--border);
+  border-left: 2px solid var(--prose-accent);
   padding-left: var(--space-md);
-  color: var(--syntax-dialogue);
+  color: var(--prose-quote);
 }
 
 .msg-markdown em {
-  color: var(--syntax-narration);
+  color: var(--prose-narration);
   font-style: italic;
 }
 
@@ -262,19 +240,16 @@
 }
 
 .msg-markdown a {
-  color: var(--syntax-link);
+  color: var(--prose-accent);
   text-decoration: underline;
-}
-
-.msg-markdown .msg-dialogue {
-  color: var(--syntax-dialogue);
+  text-underline-offset: 2px;
 }
 
 .msg-markdown code {
+  color: var(--prose-accent);
   border-radius: var(--radius-xs);
-  background: var(--surface-hover);
+  background: var(--prose-code);
   padding: 0 var(--space-xs);
-  color: var(--syntax-code);
   font-family: var(--font-mono);
   font-size: var(--text-label);
 }
@@ -289,6 +264,7 @@
 }
 
 .msg-markdown pre code {
+  color: var(--text);
   background: transparent;
   padding: 0;
 }
@@ -623,17 +599,8 @@
     max-width: 90%;
   }
 
-  /**
-   * No hover on touch, so the control bar is always legible — and it stays
-   * one row. Provenance used to be hidden outright at this width, which is
-   * the width the operator actually reads on: it now truncates instead.
-   */
+  /* No hover on touch, so the footer is always legible there. */
   .msg-footer {
-    flex-wrap: nowrap;
     opacity: 1;
-  }
-
-  .msg-model {
-    flex-shrink: 1;
   }
 }

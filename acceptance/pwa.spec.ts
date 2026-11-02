@@ -95,7 +95,6 @@ export default (env) => {
       page.getByRole('alertdialog', { name: 'Update available' }),
     ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.screenshot({ path: '/tmp/simplebot-update-dialog.png' });
     await page.getByRole('button', { name: 'Update and reload' }).click();
     await expect(page).toHaveTitle('SimpleBot updated');
     await expect(message).toHaveValue('');

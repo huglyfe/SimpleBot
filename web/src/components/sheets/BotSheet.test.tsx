@@ -100,14 +100,6 @@ beforeEach(() => {
 });
 
 describe('BotSheet', () => {
-  it('shows the bot artwork from bootstrap', async () => {
-    const { container } = renderSheet();
-
-    await screen.findByLabelText('Name');
-    const artwork = container.querySelector('img');
-    expect(artwork).toHaveAttribute('src', '/api/bots/seraphina/avatar');
-  });
-
   it('saves artwork independently, preserves text drafts on failure, and allows the same file to be chosen again', async () => {
     const user = userEvent.setup();
     const { save, client } = renderSheet();
@@ -179,12 +171,14 @@ describe('BotSheet', () => {
   it('opens the bot artwork in a larger viewer', async () => {
     const user = userEvent.setup();
     renderSheet();
-
-    await user.click(
-      await screen.findByRole('button', {
-        name: 'View Seraphina artwork',
-      }),
+    const opener = await screen.findByRole('button', {
+      name: 'View Seraphina artwork',
+    });
+    expect(opener.querySelector('img')).toHaveAttribute(
+      'src',
+      '/api/bots/seraphina/avatar',
     );
+    await user.click(opener);
 
     const viewer = screen.getByRole('dialog', { name: 'Seraphina artwork' });
     expect(

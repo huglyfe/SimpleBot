@@ -18,6 +18,7 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${String(port)}`,
     trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
   // Keep WebKit limited to engine-specific regressions; Chromium owns the suite.
   projects: [

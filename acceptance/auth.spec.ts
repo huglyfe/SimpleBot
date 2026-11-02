@@ -54,10 +54,6 @@ test('pairs, resumes, and logs out a protected browser', async ({
   await page.getByRole('searchbox', { name: 'Find a setting' }).fill('session');
   const expiry = page.getByLabel('Browser login expiry (days)');
   await expect(expiry).toHaveValue('30');
-  await page.screenshot({
-    animations: 'disabled',
-    path: '/tmp/simplebot-cookie-expiry.png',
-  });
   await expiry.fill('0');
   const saved = page.waitForResponse(
     (response) =>
@@ -133,15 +129,11 @@ test('pairs, resumes, and logs out a protected browser', async ({
           (button) => button.scrollWidth <= button.clientWidth,
         ),
       ).toBe(true);
-      await page.screenshot({
-        path: `/tmp/simplebot-auth-settings-${String(width)}.png`,
-      });
     }
     await page.setViewportSize({ width: 1280, height: 900 });
     await page
       .getByRole('button', { name: 'Purge other logins', exact: true })
       .scrollIntoViewIfNeeded();
-    await page.screenshot({ path: '/tmp/simplebot-auth-settings-desktop.png' });
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();

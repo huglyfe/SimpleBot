@@ -3,7 +3,7 @@ import { createSessionResponseSchema } from '../shared/src/contracts.js';
 
 test('a nested deletion retains pending and failed confirmation until explicit completion', async ({
   page,
-}, testInfo) => {
+}) => {
   await page.setViewportSize({
     width: 390,
     height: 844,
@@ -70,7 +70,6 @@ test('a nested deletion retains pending and failed confirmation until explicit c
   ).toBeEnabled();
   expect(requests).toBe(1);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
-  await page.screenshot({ path: testInfo.outputPath('delete-failure.png') });
   await page.unroute(`**${endpoint}`);
   const deleted = page.waitForResponse(
     (response) =>

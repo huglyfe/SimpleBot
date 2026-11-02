@@ -1,3 +1,4 @@
+import { TimePreferences } from './lib/format.js';
 import {
   QueryCache,
   QueryClient,
@@ -177,7 +178,7 @@ function ChatApp() {
   const bot = data.bots.find((item) => item.slug === active?.botSlug);
 
   return (
-    <>
+    <TimePreferences value={data.time}>
       <AppShell
         data={data}
         activeSessionId={activeId}
@@ -274,7 +275,7 @@ function ChatApp() {
           onClose={() => setPanel(null)}
         />
       )}
-    </>
+    </TimePreferences>
   );
 }
 

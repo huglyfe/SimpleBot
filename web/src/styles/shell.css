@@ -61,55 +61,91 @@
   margin: calc(var(--header-height) + var(--space-sm)) var(--space-md) 0;
 }
 
-/* Overlap the existing scroll area without another positioned wrapper. */
+/* Floating glass pills over the transcript. The bar itself is transparent and
+   lets pointer input through to the transcript between the pills. */
 .shell-header {
   position: sticky;
   top: 0;
-  flex: none;
-  height: var(--header-height);
-  margin-bottom: calc(var(--header-height) * -1);
   z-index: 12;
-  display: grid;
-  min-height: var(--header-height);
-  grid-template-columns: 92px minmax(0, 1fr) 92px;
+  display: flex;
+  height: var(--header-height);
+  flex: none;
   align-items: center;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-glass);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  padding: 0 var(--space-sm);
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: calc(var(--header-height) * -1);
+  padding: 0 var(--space-md);
+  pointer-events: none;
 }
 
-.header-side {
+.header-side,
+.header-center > * {
+  pointer-events: auto;
+}
+
+.header-side:not(:empty),
+.bot-identity,
+.header-center > strong {
   display: flex;
   align-items: center;
+  gap: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  padding: 2px;
+}
+
+/* Centred over the main column whatever the side pills hold. */
+.header-center {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  max-width: calc(100% - 4 * var(--touch-target) - 2 * var(--space-xl));
+  transform: translateX(-50%);
 }
 
 .header-side.is-right {
-  justify-content: flex-end;
-  gap: 2px;
+  margin-left: auto;
 }
 
-.header-center {
-  display: flex;
+.bot-identity,
+.header-center > strong {
   min-width: 0;
-  justify-content: center;
-}
-
-.bot-identity {
-  display: flex;
-  min-width: 0;
-  max-width: 46vw;
-  min-height: var(--touch-target);
-  align-items: center;
+  min-height: calc(var(--touch-target) + 6px);
   gap: var(--space-sm);
-  border-radius: var(--radius-control);
-  padding: var(--space-xs) var(--space-sm);
-  font-weight: var(--weight-medium);
+  padding: 2px var(--space-md) 2px 4px;
+}
+
+.header-center > strong {
+  padding-inline: var(--space-md);
 }
 
 .bot-identity:hover {
   background: var(--surface-hover);
+}
+
+.bot-identity strong,
+.bot-identity-preset {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bot-identity strong {
+  font-weight: var(--weight-medium);
+}
+
+.bot-identity-preset {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.bot-identity-preset::before {
+  margin-right: var(--space-sm);
+  color: var(--text-faint);
+  content: '·';
 }
 
 /* Drawer */
@@ -276,13 +312,16 @@
   display: grid;
   width: 100%;
   min-height: var(--touch-target);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-content: center;
-  gap: 2px;
-  padding: var(--space-sm) var(--space-3xl) var(--space-sm) var(--space-sm);
+  align-items: baseline;
+  gap: 2px var(--space-sm);
+  padding: var(--space-xs) calc(var(--touch-target) + var(--space-xs))
+    var(--space-xs) var(--space-sm);
   text-align: left;
 }
 
-/* One title line, plus a search snippet only while a search is showing one. */
+/* One title line and its recency, plus a search snippet while searching. */
 .session-main strong,
 .session-main span {
   overflow: hidden;
@@ -299,9 +338,16 @@
   font-weight: var(--weight-medium);
 }
 
+.session-main time,
 .session-main span {
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-size: var(--text-micro);
+  font-variant-numeric: tabular-nums;
+}
+
+.session-main span {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
 }
 
 /* The row's action menu rides the row; the row itself owns the hover state. */
@@ -359,14 +405,10 @@
 
 @media (max-width: 800px) {
   .shell-header {
-    padding: 0 var(--space-xs);
+    padding: 0 var(--space-sm);
   }
 
-  .bot-identity {
-    max-width: 42vw;
-  }
-
-  .sidebar-footer span {
+  .bot-identity-preset {
     display: none;
   }
 }

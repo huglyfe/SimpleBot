@@ -363,3 +363,25 @@ it('finishes a provider save and adopts its revision while list refreshes are pe
   expect(api.saveSettings.mock.calls[1]?.[1]).toBe('config-2');
   pending.resolve(undefined);
 });
+
+it('keeps clock format in General and saves or discards through the existing settings draft', async () => {
+  const user = userEvent.setup();
+  renderPanel({ section: 'application' });
+  const twelve = await screen.findByRole('radio', { name: '12-hour' });
+  expect(screen.getByRole('radio', { name: '24-hour' })).toBeChecked();
+  await user.click(twelve);
+  expect(api.saveSettings).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button', { name: 'Discard' }));
+  expect(screen.getByRole('radio', { name: '24-hour' })).toBeChecked();
+  await user.click(twelve);
+  await user.click(screen.getByRole('button', { name: /^Save$/u }));
+  await waitFor(() =>
+    expect(api.saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        application: { ...APPLICATION_DEFAULTS, clockFormat: '12' },
+      }),
+      'config-1',
+    ),
+  );
+  expect(twelve).toBeChecked();
+});

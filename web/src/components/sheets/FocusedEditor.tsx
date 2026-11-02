@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckIcon, RefreshIcon, SaveIcon } from '../../icons.js';
+import { CheckIcon, RefreshIcon } from '../../icons.js';
 import { Sheet, SheetActions } from '../primitives/Sheet.js';
 import { errorMessage } from '../../lib/errorMessage.js';
 
@@ -89,19 +89,12 @@ export function FocusedEditor<T>({
           <button
             type="submit"
             form={formId}
-            className="ui-button is-primary ui-editor-action"
+            className="ui-icon-button ui-save"
             aria-label={pending ? 'Saving…' : actionLabel}
             title={actionLabel}
             disabled={pending || !valid(draft)}
           >
-            {pending ? (
-              <RefreshIcon className="ui-saving" />
-            ) : actionLabel === 'Done' ? (
-              <CheckIcon />
-            ) : (
-              <SaveIcon />
-            )}
-            {actionLabel.split(' ')[0]}
+            {pending ? <RefreshIcon className="ui-saving" /> : <CheckIcon />}
           </button>
         </SheetActions>
         <form

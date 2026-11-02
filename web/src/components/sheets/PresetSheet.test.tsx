@@ -152,9 +152,11 @@ describe('PresetSheet', () => {
     ).toHaveTextContent('1000k context');
   });
 
-  it('edits one preset prompt at a time without losing the draft', async () => {
+  it('stages separate prompt edits and saves them with the panel draft', async () => {
     const user = userEvent.setup();
-    renderSheet();
+    const save = vi.fn<SavePreset>().mockResolvedValue('preset-2');
+    renderSheet(vi.fn(), save);
+    await user.type(await screen.findByLabelText('Name'), ' edited');
 
     await user.click(
       await screen.findByRole('button', { name: 'Edit System' }),
@@ -178,6 +180,23 @@ describe('PresetSheet', () => {
     expect(screen.getByRole('textbox', { name: 'System' })).toHaveValue(
       'Stay in bot.',
     );
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    expect(save).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith(
+      'presets/default',
+      expect.objectContaining({
+        persona: { name: 'Alex edited', description: '' },
+        prompts: {
+          ...BASE_PRESET.prompts,
+          system: 'Stay in bot.',
+          instructions: 'Keep responses concise.',
+        },
+      }),
+      'preset-1',
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
   it('uses one summary-model toggle and reveals the existing picker when off', async () => {
@@ -350,28 +369,6 @@ it('saves rapid inline edits together, preserves failure, and blocks changes dur
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled(),
   );
-});
-
-it('a subeditor Done stages its changes and the panel Save writes the combined draft', async () => {
-  const user = userEvent.setup();
-  const save = vi.fn<SavePreset>().mockResolvedValue('preset-2');
-  renderSheet(vi.fn(), save);
-  await user.type(await screen.findByLabelText('Name'), ' edited');
-  await user.click(screen.getByRole('button', { name: 'Edit System' }));
-  await user.type(screen.getByLabelText('System'), 'New prompt');
-  await user.click(screen.getByRole('button', { name: 'Done' }));
-  expect(save).not.toHaveBeenCalled();
-  await user.click(screen.getByRole('button', { name: 'Save' }));
-  expect(save).toHaveBeenCalledTimes(1);
-  expect(save).toHaveBeenCalledWith(
-    'presets/default',
-    expect.objectContaining({
-      persona: { name: 'Alex edited', description: '' },
-      prompts: { ...BASE_PRESET.prompts, system: 'New prompt' },
-    }),
-    'preset-1',
-  );
-  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 });
 
 it('keeps an unsupported saved effort visible instead of silently showing off', async () => {

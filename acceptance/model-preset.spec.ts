@@ -57,9 +57,6 @@ for (const width of [1280, 390]) {
     await expect(
       application.getByRole('button', { name: 'Timezone', exact: true }),
     ).toBeVisible();
-    await page.screenshot({
-      path: `/tmp/simplebot-simplified-application-${String(width)}.png`,
-    });
     await application
       .getByRole('button', { name: 'Close panel', exact: true })
       .click();
@@ -97,9 +94,6 @@ for (const width of [1280, 390]) {
     await expect(
       bot.getByRole('button', { name: 'Save', exact: true }),
     ).toBeDisabled();
-    await page.screenshot({
-      path: `/tmp/simplebot-simplified-bot-${String(width)}.png`,
-    });
     await bot.getByRole('button', { name: 'Close panel', exact: true }).click();
     if (await drawer.isVisible()) await drawer.click();
     const created = page.waitForResponse(
@@ -169,9 +163,6 @@ for (const width of [1280, 390]) {
         await (await page.request.get(`/api/presets/${slug}`)).json(),
       ).value.mainEffort,
     ).toBe('high');
-    await page.screenshot({
-      path: `/tmp/simplebot-simplified-effort-${String(width)}.png`,
-    });
     await panel.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(
       panel.getByRole('button', { name: 'Save', exact: true }),

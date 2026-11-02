@@ -169,7 +169,6 @@ test('phone connection editors fit the viewport and confirm deletion', async ({
     expect(box.x + box.width).toBeLessThanOrEqual(320);
     expect(box.width).toBeGreaterThan(180);
   }
-  await page.screenshot({ path: '/tmp/simplebot-provider-phone.png' });
   await provider.getByRole('button', { name: 'Discard', exact: true }).click();
   await page.getByRole('button', { name: 'Close panel' }).click();
   await expect(
@@ -212,7 +211,6 @@ test('phone connection editors fit the viewport and confirm deletion', async ({
     .boundingBox();
   if (!nameBox || !connectionBox) throw new Error('Missing connection fields');
   expect(connectionBox.y).toBeGreaterThanOrEqual(nameBox.y + nameBox.height);
-  await page.screenshot({ path: '/tmp/simplebot-mcp-phone.png' });
   await editor.getByRole('button', { name: 'Done', exact: true }).click();
   const item = page.getByRole('button', {
     name: 'Edit phone-review',
@@ -296,13 +294,7 @@ test('toolbar and composer overlay the transcript while reserving readable edges
         }),
       )
       .toBe(true);
-    await page.screenshot({
-      path: `/tmp/simplebot-composer-${String(width)}.png`,
-    });
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.screenshot({
-      path: `/tmp/simplebot-glass-light-${String(width)}.png`,
-    });
     await input.fill('');
     await expect
       .poll(async () => {
@@ -311,9 +303,6 @@ test('toolbar and composer overlay the transcript while reserving readable edges
         return field !== null && row !== null && Math.abs(field.y - row.y) < 1;
       })
       .toBe(true);
-    await page.screenshot({
-      path: `/tmp/simplebot-composer-controls-${String(width)}.png`,
-    });
     await page.emulateMedia({ colorScheme: 'dark' });
   }
   await page.route('**/api/sessions', (route) =>
@@ -383,6 +372,8 @@ test('message sheets preserve transcript layout, failed drafts, and saved source
     ).toBe(height);
     await expect(row.locator('textarea')).toHaveCount(0);
     const input = editor.getByRole('textbox');
+    await expect(input).toHaveCSS('font-size', '16px');
+    await expect(composer).toHaveCSS('font-size', '16px');
     const source = `Edited ${role} source.\n**Markdown stays source.**`;
     await input.fill(source);
     let writes = 0;
@@ -400,8 +391,9 @@ test('message sheets preserve transcript layout, failed drafts, and saved source
       width: node.clientWidth,
       height: node.clientHeight,
     }));
-    expect(size.width).toBeGreaterThanOrEqual(44);
-    expect(size.height).toBeGreaterThanOrEqual(44);
+    const target = width <= 800 ? 44 : 32;
+    expect(size.width).toBeGreaterThanOrEqual(target);
+    expect(size.height).toBeGreaterThanOrEqual(target);
     await save.click();
     await expect(editor.getByRole('alert')).toHaveText('Write refused');
     await expect(input).toHaveValue(source);
@@ -412,9 +404,6 @@ test('message sheets preserve transcript layout, failed drafts, and saved source
     await opener.click();
     await expect(input).not.toHaveValue(source);
     await input.fill(source);
-    await page.screenshot({
-      path: `/tmp/simplebot-message-editor-${String(width)}.png`,
-    });
     await page.unroute('**/api/sessions/*/*/*/source');
     await save.click();
     await expect(editor).toHaveCount(0);
@@ -425,10 +414,6 @@ test('message sheets preserve transcript layout, failed drafts, and saved source
     await expect(page.getByRole('dialog').getByRole('textbox')).toHaveValue(
       source,
     );
-    await page.screenshot({
-      path: `/tmp/simplebot-message-saved-${String(width)}.png`,
-      animations: 'disabled',
-    });
     const beforeClose = await page
       .locator('.msg-scroll')
       .evaluate((node) => node.scrollTop);
@@ -454,7 +439,6 @@ test('message sheets preserve transcript layout, failed drafts, and saved source
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: '/tmp/simplebot-message-toolbar-320.png' });
   await remove.click();
   await page
     .getByRole('alertdialog')
@@ -475,10 +459,6 @@ test('message sheets preserve transcript layout, failed drafts, and saved source
     page.getByText('Last request tokens', { exact: true }),
   ).toBeVisible();
   await expect(page.getByText('Total tokens', { exact: true })).toHaveCount(0);
-  await page.screenshot({
-    path: '/tmp/simplebot-context-320.png',
-    animations: 'disabled',
-  });
   expect(errors).toEqual([]);
 });
 

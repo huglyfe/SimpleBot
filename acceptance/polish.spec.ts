@@ -2,14 +2,46 @@ import { expect, test } from '@playwright/test';
 
 test.use({ serviceWorkers: 'block' });
 
+test('record Add controls center their icon and label on desktop and phone', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Capabilities', exact: true }).click();
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const add = page.getByRole('button', {
+      name: 'Add Docker container',
+      exact: true,
+    });
+    await add.scrollIntoViewIfNeeded();
+    const button = await add.boundingBox();
+    const icon = await add.locator('span').boundingBox();
+    const label = await add.locator('strong').boundingBox();
+    if (!button || !icon || !label) throw new Error('Missing Add control');
+    expect((icon.x + label.x + label.width) / 2).toBeCloseTo(
+      button.x + button.width / 2,
+      0,
+    );
+    for (const content of [icon, label]) {
+      expect(content.y + content.height / 2).toBeCloseTo(
+        button.y + button.height / 2,
+        0,
+      );
+    }
+  }
+});
+
 test('desktop focus preserves the composer and reading position; footer labels fit their targets', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
+  // Arrange the conversation before mounting the UI so the layout test cannot
+  // fill a previous conversation's composer during navigation.
+  const created = await page.request.post('/api/sessions', {
+    data: { botSlug: 'echo' },
+  });
+  expect(created.ok()).toBe(true);
   await page.goto('/');
-  await page
-    .getByRole('button', { name: 'New conversation with Echo', exact: true })
-    .click();
   const message = page.getByRole('textbox', { name: 'Message', exact: true });
   await message.fill('A long conversation for layout review.\n'.repeat(80));
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
@@ -84,6 +116,16 @@ test('native selections and searchable fields share geometry and type in both th
     await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
     for (const width of [1280, 390, 320]) {
       await page.setViewportSize({ width, height: 844 });
+      const identity = page.getByRole('banner').getByRole('button', {
+        name: 'Echo',
+        exact: true,
+      });
+      await expect(identity.locator('.ui-avatar')).toBeVisible();
+      expect(
+        await identity
+          .locator('.ui-avatar')
+          .evaluate((avatar) => getComputedStyle(avatar, '::before').content),
+      ).toBe('none');
       await page
         .getByRole('banner')
         .getByRole('button', { name: /^(?:E )?Echo$/u })
@@ -110,10 +152,7 @@ test('native selections and searchable fields share geometry and type in both th
         );
       expect(styles).toHaveLength(2);
       expect(styles[0]).toEqual(styles[1]);
-      expect(styles[0]?.[0]).toBe('16px');
-      await page.screenshot({
-        path: `/tmp/simplebot-polish-bot-${colorScheme}-${String(width)}.png`,
-      });
+      expect(styles[0]?.[0]).toBe(width <= 800 ? '16px' : '14px');
       await bot
         .getByRole('button', { name: 'Close panel', exact: true })
         .click();
@@ -127,6 +166,19 @@ test('native selections and searchable fields share geometry and type in both th
       await expect(
         preset.getByRole('heading', { name: 'Main Model', level: 3 }),
       ).toBeVisible();
+      const bounds = await preset.boundingBox();
+      if (!bounds) throw new Error('Missing preset panel');
+      expect(bounds.y).toBeGreaterThanOrEqual(0);
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(844);
+      await preset
+        .getByRole('heading', { name: 'Voice', exact: true })
+        .scrollIntoViewIfNeeded();
+      await expect(
+        preset.getByRole('heading', { name: 'Voice', exact: true }),
+      ).toBeInViewport();
+      await expect(
+        preset.getByRole('button', { name: 'Close panel' }),
+      ).toBeInViewport();
       await expect(
         preset.getByRole('heading', { name: 'Summary Model', level: 3 }),
       ).toBeVisible();
@@ -141,9 +193,6 @@ test('native selections and searchable fields share geometry and type in both th
       await expect(preset.getByLabel('Summary reasoning effort')).toHaveValue(
         'high',
       );
-      await page.screenshot({
-        path: `/tmp/simplebot-polish-models-${colorScheme}-${String(width)}.png`,
-      });
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -235,9 +284,6 @@ test('long model names, empty catalogs, and absent saved selections remain reada
           (element) => element.scrollWidth <= element.clientWidth,
         ),
       ).toBe(true);
-      await page.screenshot({
-        path: `/tmp/simplebot-catalog-${mode}-${String(width)}.png`,
-      });
       await choices.getByRole('searchbox').press('Escape');
       await expect(trigger).toBeFocused();
       await expect(

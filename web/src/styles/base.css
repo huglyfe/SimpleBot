@@ -18,8 +18,9 @@ body {
   color: var(--text);
   overflow: hidden;
   font-family: var(--font-ui);
-  font-size: var(--text-body);
+  font-size: var(--text-ui);
   line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -30,8 +31,7 @@ select {
   color: inherit;
 }
 
-/* One field shape and type size, including button-backed catalog pickers.
-   Keep text entry at 16px to prevent iOS focus zoom. */
+/* One field shape, including button-backed catalog pickers. */
 input:not([type='checkbox'], [type='radio'], [type='range']),
 textarea,
 select,
@@ -40,9 +40,9 @@ select,
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--surface-raised);
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-xs) var(--space-md);
   color: var(--text);
-  font-size: var(--text-body);
+  font-size: var(--text-ui);
   font-weight: var(--weight-regular);
   line-height: var(--leading-body);
 }
@@ -60,6 +60,8 @@ select,
 
 /* Keep the manual resize grip where content sizing is unavailable. */
 textarea {
+  /* Long-form writing stays at the transcript's reading size on desktop too. */
+  font-size: var(--text-body);
   max-height: 40vh;
   resize: vertical;
   field-sizing: content;
@@ -195,6 +197,12 @@ select:focus-visible,
 .auth-card h1,
 .auth-card p {
   margin: 0;
+}
+
+.auth-card h1 {
+  font-size: var(--text-headline);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
 }
 
 .auth-card label {

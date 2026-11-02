@@ -5,7 +5,7 @@ test.use({ serviceWorkers: 'block' });
 for (const width of [1280, 390]) {
   test(`settings code loads only when opened at ${String(width)}px and returns focus`, async ({
     page,
-  }, testInfo) => {
+  }) => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
@@ -38,7 +38,6 @@ for (const width of [1280, 390]) {
       panel.getByRole('button', { name: 'Close panel' }),
     ).toBeFocused();
     expect(requests).toBe(1);
-    await page.screenshot({ path: testInfo.outputPath('lazy-settings.png') });
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCount(0);
     await expect(trigger).toBeFocused();

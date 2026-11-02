@@ -78,10 +78,6 @@ for (const width of [1280, 390]) {
         exact: true,
       });
       await expect(replacement.getByLabel('Secret value')).toHaveValue('');
-      await page.screenshot({
-        path: `/tmp/simplebot-secrets-${String(width)}.png`,
-        animations: 'disabled',
-      });
       const box = await replacement.boundingBox();
       expect(box?.width).toBeLessThanOrEqual(width);
       await replacement

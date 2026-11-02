@@ -13,7 +13,7 @@ import { unknownRecordSchema } from '@simplebot/shared';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import { createTestFixture } from '../src/test-helper.js';
+import { createTestFixture, disposeTestFixture } from '../src/test-helper.js';
 
 const port = Number.parseInt(process.env.PORT ?? '4173', 10);
 const loginEnabled = process.env.AUTH_ENABLED === 'true';
@@ -84,6 +84,12 @@ const scriptedResponse: FauxResponseStep = async (context) => {
   }
   if (
     getCurrentSystemPrompt(context.messages).includes('Summarize') &&
+    prompt.includes('Regenerated evidence')
+  ) {
+    return fauxAssistantMessage('Summary regenerated from edited history.');
+  }
+  if (
+    getCurrentSystemPrompt(context.messages).includes('Summarize') &&
     prompt.includes('Fallback evidence')
   ) {
     return fauxAssistantMessage('', {
@@ -120,6 +126,23 @@ const scriptedResponse: FauxResponseStep = async (context) => {
       fauxText(`Ordered answer ${String(variant)}.`),
     ]);
   }
+  if (prompt.includes('Acceptance todo effects')) {
+    if (ordinal % 2 === 1)
+      return fauxAssistantMessage(
+        [
+          fauxToolCall('system__todo_add', {
+            title: 'Model deadline',
+            due: '2026-10-23T15:45',
+          }),
+          fauxToolCall('system__variable_set', {
+            name: 'progress',
+            value: 'started',
+          }),
+        ],
+        { stopReason: 'toolUse' },
+      );
+    return fauxAssistantMessage('Acceptance reply with proposed changes.');
+  }
   if (prompt.includes('Acceptance swipe lifecycle')) {
     if (ordinal === 1) return fauxAssistantMessage('First swipe variant.');
     if (ordinal === 2) return fauxAssistantMessage('Second swipe variant.');
@@ -139,7 +162,7 @@ fixture.faux.setResponses(Array.from({ length: 128 }, () => scriptedResponse));
 await fixture.runtime.app.listen({ host: '127.0.0.1', port });
 
 async function close(): Promise<void> {
-  await fixture.runtime.close();
+  await disposeTestFixture(fixture);
   process.exit(0);
 }
 process.once('SIGINT', () => void close());

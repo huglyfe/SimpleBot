@@ -4,6 +4,7 @@ import {
   conversationDateKey,
   formatConversationDate,
   formatDayDivider,
+  formatRelative,
 } from './format.js';
 
 describe('conversation dates', () => {
@@ -15,15 +16,6 @@ describe('conversation dates', () => {
       'July 24, 2026',
     );
     expect(conversationDateKey(instant, 'UTC')).toBe('2026-07-25');
-  });
-
-  it('defaults to the viewer timezone, the only one this client can claim', () => {
-    const instant = '2026-07-25T02:30:00.000Z';
-    const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-    expect(conversationDateKey(instant)).toBe(
-      conversationDateKey(instant, local),
-    );
   });
 });
 
@@ -63,6 +55,37 @@ describe('formatDayDivider', () => {
 
     expect(formatDayDivider('2026-12-31T20:00:00.000Z', 'UTC', newYear)).toBe(
       'Yesterday',
+    );
+  });
+});
+
+it('uses the previous calendar day even when the DST day is shorter or longer', () => {
+  expect(
+    formatDayDivider(
+      '2026-03-08T16:00:00Z',
+      'America/New_York',
+      new Date('2026-03-09T04:30:00Z'),
+    ),
+  ).toBe('Yesterday');
+  expect(
+    formatDayDivider(
+      '2026-10-31T16:00:00Z',
+      'America/New_York',
+      new Date('2026-11-02T04:30:00Z'),
+    ),
+  ).toBe('Yesterday');
+});
+
+describe('drawer labels', () => {
+  const now = new Date('2026-07-25T12:00:00.000Z');
+
+  it('shortens recency and falls back to a date after a week', () => {
+    expect(formatRelative('2026-07-25T11:59:40.000Z', 'UTC', now)).toBe('now');
+    expect(formatRelative('2026-07-25T11:15:00.000Z', 'UTC', now)).toBe('45m');
+    expect(formatRelative('2026-07-25T02:00:00.000Z', 'UTC', now)).toBe('10h');
+    expect(formatRelative('2026-07-20T12:00:00.000Z', 'UTC', now)).toBe('5d');
+    expect(formatRelative('2026-07-01T12:00:00.000Z', 'UTC', now)).toMatch(
+      /Jul/u,
     );
   });
 });

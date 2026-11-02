@@ -3,6 +3,7 @@ import { presetDocumentSchema } from '../shared/src/authored.js';
 import {
   createSessionResponseSchema,
   sessionContextSchema,
+  sessionProjectionSchema,
 } from '../shared/src/contracts.js';
 
 async function startConversation(page: Page, bot = 'Echo'): Promise<void> {
@@ -43,13 +44,18 @@ async function openConversationControls(page: Page): Promise<void> {
   ).toBeVisible();
 }
 
+/** Phones and touch input keep 16px entry (iOS focus zoom); desktop is compact. */
 async function expectTextEntryFloor(page: Page): Promise<void> {
   const undersized = await page
     .locator('input, textarea, select')
     .evaluateAll((controls) =>
       controls.flatMap((control) => {
+        const floor = matchMedia('(max-width: 800px), (pointer: coarse)')
+          .matches
+          ? 16
+          : 14;
         const size = Number.parseFloat(getComputedStyle(control).fontSize);
-        return size < 16
+        return size < floor
           ? [
               `${control.tagName.toLowerCase()}#${control.id || '(no id)'}: ${String(size)}px`,
             ]
@@ -213,6 +219,41 @@ test('shows direct variable, schedule, Context, and compaction evidence', async 
   await expect(
     page.getByText('[Summary unavailable. Retrieve details if needed.]'),
   ).toBeVisible();
+  const regenerate = conversation.getByRole('button', {
+    name: /^Regenerate summary · Exchanges/u,
+  });
+  await regenerate.click();
+  await expect(conversation.getByRole('alert')).toContainText(
+    'Scripted summary failure.',
+  );
+  await expect(
+    page.getByText('[Summary unavailable. Retrieve details if needed.]'),
+  ).toBeVisible();
+  const id = await page.evaluate(() =>
+    localStorage.getItem('simplebot-session'),
+  );
+  const first = sessionProjectionSchema
+    .parse(await (await page.request.get(`/api/sessions/${id ?? ''}`)).json())
+    .page.positions.find(
+      (position) =>
+        position.role === 'user' && position.source === 'Fallback evidence one',
+    );
+  expect(
+    (
+      await page.request.patch(
+        `/api/sessions/${id ?? ''}/positions/${first?.id ?? ''}/source`,
+        { data: { source: 'Regenerated evidence one' } },
+      )
+    ).ok(),
+  ).toBe(true);
+  await regenerate.click();
+  await expect(
+    page.getByText('Summary regenerated from edited history.'),
+  ).toBeVisible();
+  await expect(conversation.getByRole('alert')).toHaveCount(0);
+  await expect(
+    page.getByText(/Fallback summary — model unavailable/u),
+  ).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   const summaryRow = conversation.getByRole('button', {
     name: /^Edit summary · Exchanges/u,
@@ -294,7 +335,6 @@ test('accepting the next reply triggers compaction without response state', asyn
   await expect(
     page.getByText('Summary of the slow compaction evidence.'),
   ).toBeVisible();
-  await page.screenshot({ path: '/tmp/simplebot-acceptance-compaction.png' });
 });
 
 test('keeps the current response swipable after manual compaction', async ({
@@ -375,9 +415,6 @@ test('imports bot artwork and shows editable source and owned grants', async ({
     expect(field.y).toBeGreaterThanOrEqual(art.y + art.height);
     expect(field.x + field.width).toBeLessThanOrEqual(width);
     await expectTextEntryFloor(page);
-    await page.screenshot({
-      path: `/tmp/simplebot-bot-${String(width)}.png`,
-    });
   }
   expect(errors).toEqual([]);
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -447,7 +484,6 @@ test.describe('touch viewport', () => {
       if (!bounds) throw new Error('Composer missing');
       expect(844 - bounds.y - bounds.height).toBeCloseTo(16, 0);
     }).toPass();
-    await page.screenshot({ path: '/tmp/simplebot-privacy-layout-phone.png' });
     await page.getByRole('button', { name: 'Conversation controls' }).click();
     await expect(
       page.getByRole('dialog', { name: 'Conversation controls' }),
@@ -567,7 +603,6 @@ test('a failed refresh retains the loaded conversation and composer', async ({
   );
   await expect(page.getByRole('textbox', { name: 'Message' })).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(1);
-  await page.screenshot({ path: '/tmp/simplebot-refresh-failure.png' });
   await expect(page.getByRole('button', { name: 'Stop response' })).toHaveCount(
     0,
   );
@@ -677,9 +712,44 @@ test('history hides swipes and return waits for two transcript heights after res
       .toBeLessThan(2);
     await expect(returnButton).toBeHidden();
     await expect(page.locator('.msg-row.is-assistant').last()).toBeInViewport();
-    await page.screenshot({
-      path: `/tmp/simplebot-clean-chat-${String(viewport.width)}-${String(viewport.height)}.png`,
-      animations: 'disabled',
-    });
   }
 });
+
+for (const width of [1280, 390]) {
+  test(`accepted changes collapse and remain inspectable at ${String(width)}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    if (width === 390)
+      await page.getByRole('button', { name: 'Open conversations' }).click();
+    await startConversation(page);
+    await send(page, `Acceptance todo effects ${String(width)}`);
+    const response = page.locator('.msg-row.is-assistant').last();
+    await expect(
+      response.getByRole('list', { name: 'Response effects' }),
+    ).toContainText('Model deadline');
+    await response.getByRole('button', { name: 'Apply effects' }).click();
+    const summary = response.getByRole('button', {
+      name: /2 changes applied/u,
+    });
+    await expect(summary).toHaveAttribute('aria-expanded', 'false');
+    await expect(
+      response.getByRole('list', { name: 'Response effects' }),
+    ).toBeHidden();
+    await summary.click();
+    await expect(
+      response.getByRole('list', { name: 'Response effects' }),
+    ).toContainText('2026-10-23T15:45');
+    await page.reload();
+    await expect(
+      page.getByRole('button', { name: /2 changes applied/u }),
+    ).toHaveAttribute('aria-expanded', 'false');
+    await openConversationControls(page);
+    await expect(
+      page.getByRole('button', {
+        name: 'Edit to-do Model deadline',
+        exact: true,
+      }),
+    ).toBeVisible();
+  });
+}

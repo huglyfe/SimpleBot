@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { TrashIcon } from '../../icons.js';
 import { DeleteConfirmDialog } from '../primitives/DeleteConfirmDialog.js';
+import { IconButton } from '../primitives/IconButton.js';
 import { FocusedEditor } from './FocusedEditor.js';
 
 /** A row opens one local draft. Only its explicit action reaches the owner. */
@@ -14,7 +15,9 @@ export function RecordEditor<T>({
   add = false,
   actionLabel = 'Save',
   remove,
+  action,
   editLabel = `Edit ${title}`,
+  editDisabled = false,
 }: {
   title: string;
   summary?: ReactNode;
@@ -31,26 +34,38 @@ export function RecordEditor<T>({
         onClick: () => void | Promise<void>;
       }
     | undefined;
+  /** One trailing row control other than removal, such as regeneration. */
+  action?: ReactNode;
   editLabel?: string;
+  editDisabled?: boolean;
 }) {
-  const [action, setAction] = useState<'edit' | 'delete' | null>(null);
+  const [open, setOpen] = useState<'edit' | 'delete' | null>(null);
   const opener = useRef<HTMLButtonElement>(null);
   const collection = useRef<HTMLElement | null>(null);
+  const trailing =
+    remove === undefined ? (
+      action
+    ) : (
+      <IconButton label={remove.label} danger onClick={() => setOpen('delete')}>
+        <TrashIcon />
+      </IconButton>
+    );
   return (
     <li
       ref={(element) => {
         if (element) collection.current = element.closest('ul');
       }}
-      className={`record-row${add ? ' is-action' : ''}${remove ? ' is-removable' : ''}`}
+      className={`record-row${add ? ' is-action' : ''}${trailing ? ' has-trailing' : ''}`}
     >
       <button
         ref={opener}
         type="button"
         className={`ui-button is-quiet ${add ? 'record-add' : 'record-select'}`}
         aria-label={add ? title : editLabel}
+        disabled={editDisabled}
         onClick={() => {
           collection.current = opener.current?.closest('ul') ?? null;
-          setAction('edit');
+          setOpen('edit');
         }}
       >
         {add ? <span aria-hidden="true">+</span> : null}
@@ -62,18 +77,8 @@ export function RecordEditor<T>({
           <small className="record-detail">{detail}</small>
         )}
       </button>
-      {remove === undefined ? null : (
-        <button
-          type="button"
-          className="ui-icon-button is-danger record-remove"
-          aria-label={remove.label}
-          title={remove.label}
-          onClick={() => setAction('delete')}
-        >
-          <TrashIcon />
-        </button>
-      )}
-      {action === 'delete' && remove ? (
+      {trailing ? <span className="record-trailing">{trailing}</span> : null}
+      {open === 'delete' && remove ? (
         <DeleteConfirmDialog
           title={remove.label + '?'}
           body={remove.description ?? 'This cannot be undone.'}
@@ -81,19 +86,19 @@ export function RecordEditor<T>({
             opener.current ??
             collection.current?.querySelector<HTMLElement>('button')
           }
-          onClose={() => setAction(null)}
+          onClose={() => setOpen(null)}
           onDelete={async () => {
             await remove.onClick();
           }}
         />
       ) : null}
-      {action === 'edit' ? (
+      {open === 'edit' ? (
         <FocusedEditor
           title={add ? title : editLabel}
           value={value}
           onSave={onSave}
           actionLabel={actionLabel}
-          onClose={() => setAction(null)}
+          onClose={() => setOpen(null)}
           returnFocus={() =>
             opener.current ??
             collection.current?.querySelector<HTMLElement>('button')

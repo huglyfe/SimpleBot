@@ -331,6 +331,16 @@ export async function compactSession(sessionId: string): Promise<void> {
   });
 }
 
+export async function regenerateLeaf(
+  sessionId: string,
+  leafId: string,
+): Promise<void> {
+  await request(
+    `/api/sessions/${encodeURIComponent(sessionId)}/leaves/${encodeURIComponent(leafId)}/regenerate`,
+    { method: 'POST' },
+  );
+}
+
 export async function editLeafSource(
   sessionId: string,
   leafId: string,

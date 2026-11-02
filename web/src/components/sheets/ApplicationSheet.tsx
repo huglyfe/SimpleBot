@@ -142,6 +142,17 @@ export function ApplicationSheet({
             }}
           />
         </Field>
+        <Field label="Clock format">
+          <SegmentedControl
+            label="Clock format"
+            value={application.clockFormat ?? APPLICATION_DEFAULTS.clockFormat}
+            options={[
+              { value: '12', label: '12-hour' },
+              { value: '24', label: '24-hour' },
+            ]}
+            onChange={(next) => patchApplication('clockFormat', next)}
+          />
+        </Field>
         <Field label="Pairing" description="Restart required.">
           <SegmentedControl
             label="Pairing"

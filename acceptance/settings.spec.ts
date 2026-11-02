@@ -237,10 +237,6 @@ test('presets save explicit drafts, preserve native controls, and support rename
     const actions = panel.getByRole('button', { name: 'Preset actions' });
     await actions.click();
     await expect(panel.getByRole('menu')).toBeVisible();
-    await page.screenshot({
-      animations: 'disabled',
-      path: `/tmp/simplebot-refinement-preset-${String(width)}.png`,
-    });
     await actions.press('Escape');
     await expect(panel.getByRole('menu')).toHaveCount(0);
     await expect(panel).toBeVisible();
@@ -277,13 +273,7 @@ test('application validates drafts and saves through dirty-panel dismissal', asy
     'Discard',
     'Save',
   ]);
-  for (const width of [1280, 390]) {
-    await page.setViewportSize({ width, height: 844 });
-    await page.screenshot({
-      animations: 'disabled',
-      path: `/tmp/simplebot-unsaved-${String(width)}.png`,
-    });
-  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await unsaved.getByRole('button', { name: 'Cancel' }).click();
   await expect(limit).toHaveValue('17');
   await application.getByRole('button', { name: 'Close panel' }).click();
@@ -346,10 +336,6 @@ test('Skills save independently and publish only after explicit capability refre
       );
     expect(labels).toHaveLength(3);
     for (const left of labels) expect(left).toBeCloseTo(labels[0] ?? 0, 0);
-    await page.screenshot({
-      animations: 'disabled',
-      path: `/tmp/simplebot-skill-editor-${width === 390 ? 'phone' : 'desktop'}.png`,
-    });
   }
   await page.setViewportSize({ width: 1280, height: 800 });
   await editor.getByLabel('Instructions').fill('Keep things simple.');
@@ -380,15 +366,7 @@ test('Skills save independently and publish only after explicit capability refre
     await (await page.request.get('/api/skills/browser-skill')).json(),
   );
   expect(savedSkill.value.instructions).toBe('Edited instructions');
-  await page.screenshot({
-    animations: 'disabled',
-    path: '/tmp/simplebot-refinement-capabilities-desktop.png',
-  });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({
-    animations: 'disabled',
-    path: '/tmp/simplebot-refinement-capabilities-phone.png',
-  });
   await capabilities
     .getByRole('button', { name: 'Delete Skill browser-skill' })
     .click();
@@ -418,7 +396,6 @@ test('load failure uses the standard popup and recovers only on explicit Refresh
   await expect(popup).toHaveClass('ui-dialog');
   await expect(popup).toContainText('Server unavailable');
   await expect(page.getByRole('alertdialog')).toHaveCount(1);
-  await page.screenshot({ path: '/tmp/simplebot-load-error.png' });
   await page.unroute('**/api/bootstrap');
   await popup.getByRole('button', { name: 'Refresh' }).click();
   await expect(popup).toHaveCount(0);
@@ -426,3 +403,50 @@ test('load failure uses the standard popup and recovers only on explicit Refresh
     page.getByRole('button', { name: 'Application settings' }),
   ).toBeVisible();
 });
+
+for (const width of [1280, 390]) {
+  test(`clock preference saves and formats deadlines and messages at ${String(width)}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const created = await page.request.post('/api/sessions', {
+      data: { botSlug: 'echo' },
+    });
+    const session = (await created.json()) as { id: string };
+    await page.request.post(`/api/sessions/${session.id}/todos`, {
+      data: { title: 'Timed goal', due: '2026-10-23T15:45' },
+    });
+    await page.goto('/');
+    await page
+      .getByRole('textbox', { name: 'Message', exact: true })
+      .fill('Clock format evidence');
+    await page.getByRole('button', { name: 'Send message' }).click();
+    await expect(page.locator('.msg-time').first()).toHaveText(
+      /^\d{2}:\d{2}$/u,
+    );
+    if (width === 390)
+      await page.getByRole('button', { name: 'Open conversations' }).click();
+    await page.getByRole('button', { name: 'Application settings' }).click();
+    const panel = page.getByRole('dialog', { name: 'Application settings' });
+    await panel.getByText('12-hour', { exact: true }).click();
+    await expect(
+      panel.getByRole('radio', { name: '12-hour', exact: true }),
+    ).toBeChecked();
+    await panel.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(
+      panel.getByRole('button', { name: 'Save', exact: true }),
+    ).toBeDisabled();
+    await panel.getByRole('button', { name: 'Close panel' }).click();
+    await expect(page.locator('.msg-time').first()).toHaveText(
+      /\d{2}:\d{2} [AP]M/u,
+    );
+    await page.reload();
+    await expect(page.locator('.msg-time').first()).toHaveText(
+      /\d{2}:\d{2} [AP]M/u,
+    );
+    await page
+      .getByRole('button', { name: 'Conversation controls', exact: true })
+      .click();
+    await expect(page.getByText(/2026-10-23 03:45 PM/u)).toBeVisible();
+  });
+}

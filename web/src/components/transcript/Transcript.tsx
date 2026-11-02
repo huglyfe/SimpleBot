@@ -46,7 +46,11 @@ import {
 import type { MessagePosition } from '@simplebot/shared';
 
 import { ArrowDownIcon } from '../../icons.js';
-import { conversationDateKey, formatDayDivider } from '../../lib/format.js';
+import {
+  conversationDateKey,
+  formatDayDivider,
+  useTimePreferences,
+} from '../../lib/format.js';
 import {
   AssistantMessageRow,
   UserMessageRow,
@@ -94,6 +98,7 @@ export function Transcript({
   onAction: TranscriptAction;
   regenerate: (positionId: string) => void;
 }): ReactElement {
+  const { timezone } = useTimePreferences();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const liveEdgeRef = useRef<HTMLDivElement | null>(null);
   /**
@@ -296,12 +301,12 @@ export function Transcript({
   const items: ReactNode[] = [];
   let previousDay: string | null = null;
   for (const position of positions) {
-    const day = conversationDateKey(position.createdAt);
+    const day = conversationDateKey(position.createdAt, timezone);
     if (day !== previousDay) {
       previousDay = day;
       items.push(
         <p key={`day-${day}-${position.id}`} className="msg-day-divider">
-          <span>{formatDayDivider(position.createdAt)}</span>
+          <span>{formatDayDivider(position.createdAt, timezone)}</span>
         </p>,
       );
     }

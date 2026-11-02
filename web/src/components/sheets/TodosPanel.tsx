@@ -1,3 +1,4 @@
+import { useTimePreferences } from '../../lib/format.js';
 import type { ReactElement } from 'react';
 import {
   TODO_TITLE_MAX,
@@ -14,21 +15,21 @@ type Draft = TodoCreate & { id?: string };
 
 export function TodosPanel({
   todos,
-  timezone,
   onSave,
   onDelete,
 }: {
   todos: Todo[];
-  timezone: string;
   onSave: (todo: Draft) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }): ReactElement {
+  const time = useTimePreferences();
+  const { timezone } = time;
   function save(draft: Draft): Promise<void> {
     const { id, ...fields } = draft;
     const parsed = todoCreateSchema.safeParse(fields);
     if (!parsed.success)
       throw new Error(
-        'Enter a title and a valid due date, or leave the date blank.',
+        'Enter a title and a valid due date and time, or leave the date blank.',
       );
     return onSave({ ...parsed.data, ...(id === undefined ? {} : { id }) });
   }
@@ -49,12 +50,33 @@ export function TodosPanel({
           <input
             id="todo-due"
             type="date"
-            value={draft.dueDate ?? ''}
+            value={draft.due?.slice(0, 10) ?? ''}
             onChange={(event) =>
-              change({ ...draft, dueDate: event.target.value || null })
+              change({
+                ...draft,
+                due: event.target.value
+                  ? `${event.target.value}T${draft.due?.slice(11) ?? '00:00'}`
+                  : null,
+              })
             }
           />
         </Field>
+        {draft.due === null ? null : (
+          <Field label="Due time" htmlFor="todo-time" hint={timezone}>
+            <input
+              id="todo-time"
+              type="time"
+              required
+              value={draft.due.slice(11)}
+              onChange={(event) =>
+                change({
+                  ...draft,
+                  due: `${draft.due?.slice(0, 10) ?? ''}T${event.target.value || '00:00'}`,
+                })
+              }
+            />
+          </Field>
+        )}
         <Field label="Note" htmlFor="todo-note">
           <textarea
             id="todo-note"
@@ -74,7 +96,12 @@ export function TodosPanel({
           title={todo.title}
           editLabel={`Edit to-do ${todo.title}`}
           summary={todo.note}
-          detail={formatTodoDue(todo.dueDate, timezone, new Date())}
+          detail={formatTodoDue(
+            todo.due,
+            timezone,
+            new Date(),
+            time.clockFormat,
+          )}
           value={todo}
           onSave={save}
           actionLabel="Save to-do"
@@ -91,7 +118,7 @@ export function TodosPanel({
       <RecordEditor<Draft>
         title="Add to-do"
         add
-        value={{ title: '', dueDate: null, note: '' }}
+        value={{ title: '', due: null, note: '' }}
         onSave={save}
         actionLabel="Create to-do"
       >

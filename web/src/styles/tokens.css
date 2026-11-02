@@ -7,45 +7,42 @@
  * `light-dark()` keeps system, light, and dark on one token map; the optional
  * `data-theme` attribute only pins the browser colour scheme.
  *
- * Palette: neutral surfaces with a violet accent. Scale and density are adapted
- * from Marinara's DESIGN.json type ramp and t3code's compact control language;
- * neither palette is copied.
+ * Palette: near-neutral surfaces separated by alpha hairlines, one violet
+ * accent, and one 80% glass recipe for chrome that floats over the transcript.
+ * Desktop controls are compact; touch and phone layouts get 44px targets and
+ * 16px text entry (iOS zooms focused fields below 16px).
  */
 
 :root {
   color-scheme: light dark;
-  --surface-glass: light-dark(rgb(255 255 255 / 80%), rgb(32 32 36 / 80%));
-  --glass-blur: 12px;
+  --surface-glass: light-dark(rgb(252 252 253 / 80%), rgb(20 20 23 / 80%));
+  --glass-blur: 16px;
 
   /* Type family */
   --font-ui:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    'Segoe UI', Roboto, sans-serif;
+    -apple-system, BlinkMacSystemFont, 'Inter Variable', Inter, 'Segoe UI',
+    system-ui, Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /**
-   * Type scale.
-   *
-   * `body` is one size for reading and for typing: every `input`, `textarea`,
-   * and `select` renders at it from the one rule in base.css, and so does
-   * message prose. iOS Safari zooms the page in when a focused control
-   * renders below 16px and does not zoom back out on blur, which set the
-   * floor — and holding prose to the same size means text does not resize
-   * when a message is opened for editing. `label` and `micro` are chrome.
+   * Type scale. `body` is message prose and multiline text entry, so text does not
+   * resize when a message opens for editing. `ui` is chrome, every other
+   * field, and pickers; `label` and `micro` are chrome.
    */
-  --text-headline: 1.25rem;
+  --text-headline: 1.125rem;
   --text-body: 1rem;
+  --text-ui: 0.875rem;
   --text-label: 0.8125rem;
-  --text-micro: 0.75rem;
+  --text-micro: 0.6875rem;
 
   --leading-tight: 1.3;
   --leading-snug: 1.35;
   --leading-body: 1.5;
-  --leading-prose: 1.65;
+  --leading-prose: 1.7;
 
   --weight-regular: 400;
   --weight-medium: 500;
-  --weight-bold: 700;
+  --weight-bold: 600;
 
   /* Spacing — Marinara's step set, extended for layout gutters */
   --space-xs: 4px;
@@ -62,47 +59,39 @@
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23858590' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
   /**
-   * Surfaces, as one ramp. Contrast separates navigation, conversation, and editing surfaces.
-   *
-   * `sunken` is the navigation rail, `bg` the conversation canvas, `surface`
-   * the chrome that floats over it, `raised` an input or card on top of that.
+   * Surfaces, as one ramp: `sunken` is the navigation rail, `bg` the
+   * conversation canvas, `surface` a sheet or dialog, `raised` a field or
+   * group on top of that. Hairline alpha borders separate them.
    */
-  --bg: light-dark(#fafafa, #18181b);
-  --surface: light-dark(#ffffff, #202024);
-  --surface-raised: light-dark(#ffffff, #27272c);
-  --surface-sunken: light-dark(#f0f0f2, #111114);
-  --surface-hover: light-dark(rgb(24 24 27 / 6%), rgb(255 255 255 / 6%));
-  --surface-active: light-dark(rgb(24 24 27 / 10%), rgb(255 255 255 / 10%));
-  --overlay-scrim: light-dark(rgb(24 24 27 / 38%), rgb(0 0 0 / 55%));
-  --overlay-scrim-strong: light-dark(rgb(24 24 27 / 55%), rgb(0 0 0 / 72%));
+  --bg: light-dark(#fcfcfd, #0c0c0e);
+  --surface: light-dark(#ffffff, #141417);
+  --surface-raised: light-dark(#ffffff, #1b1b1f);
+  --surface-sunken: light-dark(#f4f4f6, #111113);
+  --surface-hover: light-dark(rgb(0 0 0 / 4%), rgb(255 255 255 / 5%));
+  --surface-active: light-dark(rgb(0 0 0 / 7%), rgb(255 255 255 / 8%));
+  --overlay-scrim: light-dark(rgb(24 24 27 / 30%), rgb(0 0 0 / 50%));
+  --overlay-scrim-strong: light-dark(rgb(24 24 27 / 50%), rgb(0 0 0 / 70%));
 
   /* Text */
-  --text: light-dark(#18181b, #f4f4f5);
-  --text-muted: light-dark(#606069, #b0b0bb);
-  --text-faint: light-dark(#71717a, #90909c);
+  --text: light-dark(#18181b, #ececf1);
+  --text-muted: light-dark(#5f5f69, #a1a1aa);
+  --text-faint: light-dark(#71717a, #80808a);
 
   /* Borders */
-  --border: light-dark(#dedee3, #3a3a43);
-  --border-subtle: light-dark(rgb(24 24 27 / 8%), rgb(255 255 255 / 8%));
-  --border-strong: light-dark(#b4b4bf, #60606c);
+  --border: light-dark(rgb(0 0 0 / 10%), rgb(255 255 255 / 10%));
+  --border-subtle: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 6%));
 
   /* Accent */
-  --accent: light-dark(#7055ee, #aa99ff);
-  --accent-hover: light-dark(#5b48f0, #bcb1ff);
-  --accent-soft: light-dark(#ebe8ff, #302b54);
-  --on-accent: light-dark(#ffffff, #16132e);
+  --accent: light-dark(#6d5ae6, #8b7cf6);
+  --accent-hover: light-dark(#5b48d8, #9d90f8);
+  --accent-soft: light-dark(rgb(109 90 230 / 10%), rgb(139 124 246 / 16%));
+  --on-accent: light-dark(#ffffff, #110e24);
 
-  /* Prose syntax — one CSS-owned semantic palette for rendered markdown */
-  --syntax-dialogue: light-dark(#792bb5, #d2a0ff);
-  --syntax-narration: light-dark(#805821, #dfc79f);
-  --syntax-link: light-dark(#00697a, #62d4e8);
-  --syntax-code: light-dark(#2d6a3a, #9bd29f);
-  --syntax-heading: var(--text);
-
-  /* Context states — never the only signal; always paired with a label */
-  --leaf-bg: light-dark(rgb(24 24 27 / 5%), rgb(255 255 255 / 5%));
-  --leaf-border: light-dark(rgb(24 24 27 / 14%), rgb(255 255 255 / 14%));
-  --history-outline: light-dark(rgb(24 24 27 / 28%), rgb(255 255 255 / 30%));
+  /* Prose: warm narration and violet details frame neutral dialogue. */
+  --prose-narration: light-dark(#895324, #d7b382);
+  --prose-accent: light-dark(#6245c4, #b4a0ff);
+  --prose-quote: light-dark(#584777, #c6b8e3);
+  --prose-code: light-dark(rgb(98 69 196 / 8%), rgb(180 160 255 / 10%));
 
   /* Status */
   --danger: light-dark(#b33a3a, #f27b7b);
@@ -110,40 +99,42 @@
   --warning: light-dark(#8f5a00, #d9a23f);
   --warning-soft: light-dark(rgb(143 90 0 / 12%), rgb(217 162 63 / 16%));
   --success: light-dark(#1a7f4b, #4bbf82);
-  --success-soft: light-dark(rgb(26 127 75 / 12%), rgb(75 191 130 / 16%));
 
-  --switch-thumb: light-dark(#ffffff, #202024);
+  --switch-thumb: #ffffff;
 
   /* Focus */
-  --focus-ring: light-dark(rgb(110 91 255 / 45%), rgb(169 156 255 / 55%));
+  --focus-ring: light-dark(rgb(109 90 230 / 45%), rgb(139 124 246 / 60%));
 
-  /* Shape — compact rounded rectangles, circular icon buttons */
+  /* Shape — rounded rectangles, circular icon buttons */
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-control: 8px;
-  --radius-card: 12px;
-  --radius-bubble: 12px;
+  --radius-card: 14px;
+  --radius-bubble: 16px;
   --radius-pill: 999px;
 
-  /* Elevation */
-  --shadow-sheet: 0 12px 32px light-dark(rgb(24 24 27 / 18%), rgb(0 0 0 / 45%));
-  --shadow-pop: 0 4px 16px light-dark(rgb(24 24 27 / 12%), rgb(0 0 0 / 38%));
-  --shadow-composer: 0 2px 8px light-dark(rgb(24 24 27 / 8%), rgb(0 0 0 / 30%));
-  --shadow-lift: 0 2px 6px light-dark(rgb(24 24 27 / 10%), rgb(0 0 0 / 25%));
-  --shadow-bar: 0 -2px 6px light-dark(rgb(24 24 27 / 10%), rgb(0 0 0 / 25%));
+  /* Elevation: floating panels and small pop-outs. */
+  --shadow-sheet: 0 16px 48px light-dark(rgb(24 24 27 / 14%), rgb(0 0 0 / 50%));
+  --shadow-pop: 0 4px 16px light-dark(rgb(24 24 27 / 10%), rgb(0 0 0 / 40%));
 
   /* Motion */
   --motion-fast: 150ms ease-out;
-  --motion-standard: 200ms ease-out;
   --motion-expressive: 300ms cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Layout */
-  --transcript-width: 780px;
+  --transcript-width: 736px;
   --header-height: 56px;
-  --composer-width: 780px;
-  --touch-target: 44px;
+  --composer-width: 736px;
+  --touch-target: 32px;
   /* One measure for every settings form, so all sheets read as one surface. */
   --form-measure: 620px;
+}
+
+@media (max-width: 800px), (pointer: coarse) {
+  :root {
+    --touch-target: 44px;
+    --text-ui: 1rem;
+  }
 }
 
 :root[data-theme='light'] {

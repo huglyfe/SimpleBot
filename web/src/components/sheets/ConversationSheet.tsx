@@ -15,8 +15,11 @@ import {
   editLeafSource,
   getContext,
   putSchedule,
+  regenerateLeaf,
   setVariable,
 } from '../../api.js';
+import { RefreshIcon } from '../../icons.js';
+import { IconButton } from '../primitives/IconButton.js';
 import { TextRecord } from './RecordEditor.js';
 import { Section } from './Section.js';
 import { SchedulesPanel } from './SchedulesPanel.js';
@@ -41,9 +44,14 @@ function formatCost(cost: number): string {
 function LeafRow({
   leaf,
   onSave,
+  regenerating,
+  onRegenerate,
 }: {
   leaf: SessionContext['leaves'][number];
   onSave: (leafId: string, source: string) => Promise<void>;
+  /** The leaf whose regeneration is running, if any. */
+  regenerating: string | null;
+  onRegenerate: (leafId: string) => void;
 }): ReactElement {
   const title =
     leaf.startExchange === leaf.endExchange
@@ -53,6 +61,7 @@ function LeafRow({
     <TextRecord
       title={title}
       editLabel={`Edit summary · ${title}`}
+      editDisabled={regenerating === leaf.id}
       value={leaf.summary}
       emptySummary="Empty summary"
       textLabel="Summary"
@@ -65,6 +74,17 @@ function LeafRow({
       }
       actionLabel="Save summary"
       onSave={(source) => onSave(leaf.id, source)}
+      action={
+        <IconButton
+          label={`Regenerate summary · ${title}`}
+          disabled={regenerating !== null}
+          onClick={() => onRegenerate(leaf.id)}
+        >
+          <RefreshIcon
+            className={regenerating === leaf.id ? 'ui-saving' : undefined}
+          />
+        </IconButton>
+      }
     />
   );
 }
@@ -95,6 +115,23 @@ function ContextPanel({
       })
       .finally(() => {
         setCompacting(false);
+      });
+  }
+
+  const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [regenerateError, setRegenerateError] = useState<string | null>(null);
+
+  function regenerate(leafId: string): void {
+    setRegenerating(leafId);
+    setRegenerateError(null);
+    void onRefreshAfter(regenerateLeaf(sessionId, leafId))
+      .catch((caught: unknown) => {
+        setRegenerateError(
+          errorMessage(caught, 'Could not regenerate summary'),
+        );
+      })
+      .finally(() => {
+        setRegenerating(null);
       });
   }
 
@@ -168,12 +205,23 @@ function ContextPanel({
       </Section>
 
       <Section title="Summaries">
+        {regenerateError === null ? null : (
+          <p className="ui-notice" role="alert">
+            {regenerateError}
+          </p>
+        )}
         {orderedLeaves.length === 0 ? (
           <p className="ui-empty">No summaries yet.</p>
         ) : (
           <ul className="record-list">
             {orderedLeaves.map((leaf) => (
-              <LeafRow key={leaf.id} leaf={leaf} onSave={saveLeaf} />
+              <LeafRow
+                key={leaf.id}
+                leaf={leaf}
+                onSave={saveLeaf}
+                regenerating={regenerating}
+                onRegenerate={regenerate}
+              />
             ))}
           </ul>
         )}
@@ -232,7 +280,6 @@ export function ConversationSheet({
           <Section title="To-dos">
             <TodosPanel
               todos={context.data.todos}
-              timezone={context.data.timezone}
               onSave={(todo) => refreshAfter(saveTodo(sessionId, todo))}
               onDelete={(id) => refreshAfter(deleteTodo(sessionId, id))}
             />
@@ -250,7 +297,6 @@ export function ConversationSheet({
 
           <Section title="Schedules">
             <SchedulesPanel
-              timezone={context.data.timezone}
               schedules={context.data.schedules}
               onSave={(schedule) =>
                 refreshAfter(putSchedule(sessionId, schedule))

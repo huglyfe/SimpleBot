@@ -18,6 +18,7 @@ import { IconButton } from '../primitives/IconButton.js';
 import { FocusedEditor } from '../sheets/FocusedEditor.js';
 import { Menu } from '../primitives/Menu.js';
 import { errorMessage } from '../../lib/errorMessage.js';
+import { formatRelative } from '../../lib/format.js';
 
 type Bot = Bootstrap['bots'][number];
 type Session = Bootstrap['sessions'][number];
@@ -291,6 +292,12 @@ export function NavigationDrawer({
                         }}
                       >
                         <strong>{session.title}</strong>
+                        <time dateTime={session.updatedAt} aria-hidden="true">
+                          {formatRelative(
+                            session.updatedAt,
+                            data.time.timezone,
+                          )}
+                        </time>
                         {matches.get(session.id) === undefined ? null : (
                           <span>{matches.get(session.id)}</span>
                         )}

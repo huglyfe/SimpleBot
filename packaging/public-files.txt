@@ -69,6 +69,7 @@ server/scripts/homebrew.ts
 server/scripts/notices.ts
 server/scripts/package.ts
 server/scripts/public-content.ts
+server/scripts/screens.ts
 server/src/app.ts
 server/src/assemble-tools.ts
 server/src/assemble.test.ts
@@ -150,6 +151,7 @@ shared/src/contracts.ts
 shared/src/index.ts
 shared/src/markup.ts
 shared/src/slug.ts
+shared/src/time.ts
 shared/src/todos.ts
 shared/src/trace.ts
 shared/test/authored.test.ts

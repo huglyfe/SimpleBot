@@ -49,7 +49,7 @@ These interruption outcomes are designed behavior, not gaps. Do not add machiner
 - **Crash mid-effect-drain.** Accepted effects without a stored result become `unresolved` at restart and stay visible until the operator marks them resolved; startup performs no re-application.
 - **External call of unknown outcome.** A process death between queued Memory retention and its stored result leaves that effect `unresolved`. An ordinary MCP or Docker call may have changed its provider without leaving durable SimpleBot evidence when the process dies before response finalization. Never re-call or reconcile either case.
 - **Crash during generation.** Admission already stored the user message and empty assistant variant. Buffered stream text may be lost. Startup fills that empty response with one generic system error and does not resume generation.
-- **Crash during compaction.** The pending leaf retains its frozen input. Startup commits its deterministic fallback directly into context without another provider call.
+- **Crash during compaction.** The pending leaf retains its covered range. Startup commits its deterministic fallback directly into context without another provider call.
 - **Missed cron occurrences.** A schedule carries no occurrence state to replay. Startup computes only its next future occurrence; every occurrence missed while stopped is gone.
 
 The following patterns are banned regardless of naming: reconciliation/recovery/self-healing passes beyond the three deterministic startup completions; outboxes, job tables, dispatch queues, or work-claiming loops beyond the two named in-process FIFOs; attempt, job, marketplace, or plugin-lifecycle status columns; leaf states beyond `pending | committed`; retries, backoff, idempotency tokens, or at-least-once delivery; health checks that take corrective action; defensive re-application of committed state; and middleware, audit tables, rate limiters, or permission systems beyond authentication and exact bot capability selections. Any change adding durability, queuing, or retry must name the permitting invariant and concrete failure in one sentence in its PR description, or be deleted.
@@ -228,9 +228,8 @@ Name: <persona name>
 Omit blank optional sections. Emit example dialogue as one section with blank lines between examples. Keep Instructions last, after Skills when present. After the system scaffold, lower these blocks in order:
 
 1. active leaves as one user-role `<conversation_memory>` block containing ordered `<summary exchanges="start..end">` children;
-2. canonical transcript messages in native user/assistant roles;
-3. the bot-owned `<depth_prompt>` at its configured position and the resolved `<post_history_instructions>` immediately before the newest authored user message, both as user-role semantic blocks; and
-4. completed effect evidence immediately after its producing assistant message as `<effects>`.
+2. canonical transcript messages in native user/assistant roles; and
+3. the bot-owned `<depth_prompt>` at its configured position and the resolved `<post_history_instructions>` immediately before the newest authored user message, both as user-role semantic blocks.
 
 Attach memory recall to the newest authored user message before its source text:
 
@@ -265,12 +264,9 @@ New transcript to summarize:
 <speaker>:
 <source>
 [Image attachment: <filename>]
-<effects>
-<completed effect evidence>
-</effects>
 ```
 
-The summary call is bounded by the configured model-call timeout, so a hung one becomes an ordinary summary failure rather than holding the compaction gate and every later item in that session open indefinitely. The summary response is plain text. Store it verbatim after trimming and enforcing the configured character limit. Failure, cancellation, or interruption stores `[Summary unavailable. Retrieve details if needed.]`; clipped overflow uses `[Summary clipped. Retrieve omitted details if needed.]`. Nothing retries the summary call.
+The summary call is bounded by the configured model-call timeout, so a hung one becomes an ordinary summary failure rather than holding the compaction gate and every later item in that session open indefinitely. The summary response is plain text. Store it verbatim after trimming and enforcing the configured character limit. During compaction, failure, cancellation, or interruption stores `[Summary unavailable. Retrieve details if needed.]`; clipped overflow uses `[Summary clipped. Retrieve omitted details if needed.]`. Nothing retries the summary call automatically.
 
 The session title is a nullable operator-authored override. Until edited, project the first 60 characters of the session's first nonblank canonical message, or **New conversation** when there is none. It is the session's only projected label: the list carries no separate preview line. Do not run a title model or background title job.
 
@@ -284,8 +280,8 @@ A scheduled attempt stores `<scheduled_event name="..." ran_at="<ISO instant>">\
 - Replay native reasoning blocks only inside that attempt's provider/tool loop; exclude stored reasoning from later conversation context, search, and compaction. Provider frames remain process-local.
 - Lock a selected assistant position when the conversation advances past it or its effects are accepted.
 - Permit deletion of an unlocked non-final variant while a sibling remains.
-- Edit user and assistant source text independently while preserving position, order, provenance, tool evidence, effects, and attachments. An edit inside a committed leaf's covered range leaves that leaf untouched: the summary already happened, and a stale one is accepted rather than tracked, regenerated, or repaired.
-- Use selected canonical content for automatic context, FTS, and compaction. Include completed effect outcomes through the bounded effects projection.
+- Edit user and assistant source text independently while preserving position, order, provenance, tool evidence, effects, and attachments. An edit inside a committed leaf's covered range leaves that leaf untouched: a stale summary is accepted rather than tracked or repaired until the operator regenerates it.
+- Use selected canonical content for automatic context, FTS, and compaction. Stored tool traces and effect details remain client inspection data, not summary input.
 - Keep context order and provider lowering deterministic and inspectable. `docs/MACROS.md` owns macro behavior and warnings.
 - Label token/accounting evidence by source: configured, provider-catalog, or provider-reported. Store the final provider-reported usage on the variant and display its prompt total as `input + cacheRead + cacheWrite`. Do not call it the current context length, estimate the next request, or run a second assembly for display accounting.
 
@@ -294,12 +290,13 @@ A scheduled attempt stores `<scheduled_event name="..." ran_at="<ISO instant>">\
 ### Leaves
 
 - Acceptance-triggered compaction and **Compact now** run the same session operation on the effect FIFO. Do not store a request on a response or distinguish manual from automatic work.
-- At the queue head, read authored configuration once for the live tail and summary call, then compute the next eligible older canonical range. If none exists, return a no-op. Otherwise insert one `pending` leaf with its frozen text/image placeholders, prior committed leaf, and newest covered position as provenance. The configured live tail is at least one exchange, so the current response remains outside the frozen source.
+- At the queue head, read authored configuration once for the live tail and summary call, then compute the next eligible older canonical range. If none exists, return a no-op. Otherwise insert one `pending` leaf with its covered range, prior committed leaf, and newest covered position as provenance. Freeze text/image placeholders in memory for the summary call; do not store another transcript copy. The configured live tail is at least one exchange, so the current response remains outside the frozen source.
 - Make one summary call for that leaf. Commit an editable summary on success and a conspicuous deterministic fallback on observed failure or cancellation. Startup commits fallback for a pending crash-interrupted leaf without calling the provider.
 - A committed leaf enters automatic context and leaf search immediately. It needs no later activation or acceptance; every later reply or swipe reads the current committed leaves when its immutable input is assembled.
 - Later compaction starts after the prior committed leaf's covered range. The newest covered assistant position is provenance; uniqueness is keyed by session and covered end ordinal. Its lock and selected variant do not control the leaf. Reducing the live tail makes additional history eligible without another reply; repeated operations no-op once it is covered.
 - Automatic threshold checking at acceptance remains engine-owned because the engine owns assembly, provider usage, cron, and headless clients. **Compact now** calls the same session operation without accepting or locking any response. Store no manual/automatic trigger kind or synthetic tool row. Context overflow is a canonical system error, not a compaction trigger.
 - The Context projection exposes whether an older range is currently compactable. Eligibility reads message and leaf boundaries without loading transcript bodies or inspection traces; freezing reads the covered content. Clients display the boolean and never reproduce live-tail arithmetic.
+- `regenerate(session, leaf)` runs on the effect FIFO for any committed leaf. It renders the leaf's range from the current canonical transcript, uses the prior leaf's current summary and the current preset, and makes the same single summary call. Success replaces the current summary (including edits made while the call ran), outcome, and search text in one transaction; failure or an empty range changes nothing and reaches the caller. It never cascades to later leaves, creates pending state, or retries.
 - Apply operator leaf edits, including empty text, to context and search immediately. Empty leaves retain coverage and cap slots, omit prompt tags, and supply `<empty_summary/>` as the next summary call’s prior-leaf reference. Retain leaves the active cap no longer admits for retrieval.
 
 ### Search
@@ -325,8 +322,8 @@ A scheduled attempt stores `<scheduled_event name="..." ran_at="<ISO instant>">\
 - Bot-wide list and search are read-only exact tool selections. Bot identity and the current-session exclusion come from assembly, never model arguments; results are bounded and may not cross to another bot.
 - The variable surface includes `system__variable_list(pattern?)`, `system__variable_set`, and `system__variable_delete`. Listing returns the matching array directly from the accepted variables captured at assembly. Proposed writes do not change that snapshot; acceptance makes them available to later attempts. An omitted pattern or `*` lists all variables; an exact name wins before a bounded, case-sensitive, RE2-compatible expression matched against names only.
 - Selecting an external tool gives the model one bounded progressive catalog through `system__tool_search` and `system__tool_call`. Search returns bounded descriptions and argument schemas.
-- To-dos are current session rows only: ID, title, nullable calendar due date, and note. Fixed limits are 32 items, 200 title characters, and 2,000 note characters. No archive, timestamps, schedule link, or edit history. A due date follows the application timezone; overdue never changes state automatically.
-- Grant `system__todo_list`, `system__todo_add`, and `system__todo_update` independently. Listing reads the immutable accepted snapshot; add assigns its ID before acceptance and returns it in the pending receipt. Update patches supplied fields only; null clears a due date, an empty string clears a note, and `done | missed | dropped` removes the item. Missing IDs fail rather than creating records. Add then update works through ordered acceptance, without a pending-state read overlay.
+- To-dos are current session rows only: ID, title, nullable local deadline (`due`, `YYYY-MM-DDTHH:mm`), and note. Fixed limits are 32 items, 200 title characters, and 2,000 note characters. No archive, timestamps, schedule link, or edit history. A deadline follows the application timezone and is compared with its local clock at minute precision; it is not a UTC instant. Changing the application timezone preserves the authored clock fields. Daylight-saving gaps and repeated hours follow that local-clock comparison, without scheduling or resolving an instant. Overdue never changes state automatically.
+- Grant `system__todo_list`, `system__todo_add`, and `system__todo_update` independently. Listing reads the immutable accepted snapshot; add assigns its ID before acceptance and returns it in the pending receipt. Update patches supplied fields only; omitting `due` preserves it and null clears the entire deadline, an empty string clears a note, and `done | missed | dropped` removes the item. Missing IDs fail rather than creating records. Add then update works through ordered acceptance, without a pending-state read overlay.
 - Operator POST/PATCH `/api/sessions/:sessionId/todos[/:todoId]` writes immediately; model candidates use the same storage operations through the existing effect drain. As with variables, later writes win. Session deletion cascades; SQLite changes and effect outcomes commit together. Effect evidence never reconstructs the list.
 - Selecting a Skill grants `system__skill_read`; load its body from the immutable activation snapshot.
 - Include exact selected, classified, currently usable tools.
@@ -500,7 +497,7 @@ The current schema contains:
 - attachment metadata; and
 - rebuildable search documents and FTS.
 
-Variables and schedules hold current session state. Variants hold provenance and read-tool evidence; accepted effects hold stateful outcomes. A pending leaf holds one frozen compaction input and its committed form enters context immediately. TTS is request-owned. Scheduled occurrences use the ordinary attempt path. Authored files hold bot state.
+Variables and schedules hold current session state. Variants hold provenance and read-tool evidence; accepted effects hold stateful outcomes. A pending leaf holds one compaction range and its committed summary enters context immediately. TTS is request-owned. Scheduled occurrences use the ordinary attempt path. Authored files hold bot state.
 
 ## 12. Backend acceptance
 

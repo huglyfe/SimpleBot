@@ -193,7 +193,7 @@ SIMPLEBOT_ROOT=/srv/simplebot simplebot pair
 
 Open your server using trusted HTTPS. In Safari on iPhone/iPad, use **Share → Add to Home Screen** (and enable **Open as Web App** when offered). In a supporting desktop or Android browser, use its **Install app** action. Localhost also works for development. A certificate-warning bypass is not a substitute for a trusted connection. Browser installation controls vary by platform.
 
-Open the installed app and pair if asked. Under **Application → Login management**, choose **Set privacy PIN**, enter six digits twice, then **Save privacy PIN**. The pairing code establishes your server login; this separate privacy PIN stays the same until you change or remove it (or clear site data). Configure it inside the installed app: its storage and login state may differ from your ordinary browser. PIN changes save through their own dialog, independently of other application settings.
+Open the installed app and pair if asked. Under **Application → Login management**, choose **Set privacy PIN**, enter a 4–20 digit PIN twice, then **Save privacy PIN**. The pairing code establishes your server login; this separate privacy PIN stays the same until you change or remove it (or clear site data). Configure it inside the installed app: its storage and login state may differ from your ordinary browser. PIN changes save through their own dialog, independently of other application settings.
 
 With a PIN enabled, launch and reload require unlocking. Switching away immediately hides the screen and stops message audio; returning after 30 seconds requires the PIN again. **Lock now** locks and stops message audio immediately. Locking keeps your current draft and lets server-side replies finish. Reloading or closing still loses unsent drafts. **Change privacy PIN** and **Remove privacy PIN** require your current PIN.
 
@@ -245,7 +245,7 @@ Choose **New bot** in the conversation drawer, then enter a name or choose a V2/
 
 The conversation stays in the center. Configuration opens only when you ask for it.
 
-Bot replies highlight quoted dialogue and blockquotes in violet, italic narration in champagne, code in green, and links in cyan. Bold keeps the surrounding text color. Blockquotes use a left border and indentation; code blocks use a monospace font and a subtle background. These colors adapt to light and dark appearance.
+Bot replies render Markdown. Dialogue reads in the normal text colour and italic narration in a warm, muted tone; links use the accent colour. Blockquotes use a left border and indentation; code uses a monospace font and a subtle background. These colors adapt to light and dark appearance.
 
 ### Conversation drawer
 
@@ -259,6 +259,8 @@ The upper-left control opens the drawer. Conversations are grouped beneath their
 - rename a conversation in the title dialog (Enter saves, Cancel leaves it unchanged), or delete it;
 - manage a bot;
 - delete all conversations for a bot.
+
+Each conversation shows how recently it changed: now, minutes, hours, or days, then a short date after a week.
 
 Deleting a conversation or bot history is destructive. Read the confirmation and check the named scope. Conversation, bot-history, variable, and schedule deletion keep their confirmation open while deleting. A failure stays inside the dialog; you can cancel or explicitly try again.
 
@@ -274,11 +276,11 @@ On phones, settings open over the drawer. Closing settings returns to the same d
 
 If a bot card becomes unreadable or disappears, its saved conversations remain listed under the bot slug. Context and speech remain available when the session preset and root config are valid. Opening Bot settings reports the card error.
 
-The centered bot name opens identity, default preset, capabilities, writing, and greetings. Default preset belongs only to the bot. New bots and imported cards without a selection receive the first available preset alphabetically by display name; that choice is saved once and can be changed in Bot settings. Click artwork for a larger view. **Add image** or **Change image** selects a PNG and saves it immediately (up to 10 MB, within the configured image-dimension limit). Image changes are independent of the panel’s Save/Discard controls: discarding text edits keeps the new image. Failed uploads retain the previous image. Settings rows show a title and preview; click a row to edit it. Editable rows have a subtle border and background, while full-width lines separate sections. Red trash controls ask before deleting. Empty bot System and Post-history prompts display Uses preset. Provider rows show URLs and model counts; dependency rows show availability and MCP tool counts, with available entries in green.
+The centered bot name, shown with the conversation's preset, opens identity, default preset, capabilities, writing, and greetings. Default preset belongs only to the bot. New bots and imported cards without a selection receive the first available preset alphabetically by display name; that choice is saved once and can be changed in Bot settings. Click artwork for a larger view. **Add image** or **Change image** selects a PNG and saves it immediately (up to 10 MB, within the configured image-dimension limit). Image changes are independent of the panel’s Save/Discard controls: discarding text edits keeps the new image. Failed uploads retain the previous image. Settings rows show a title and preview; click a row to edit it. Editable rows sit in one rounded group separated by thin lines, with **Add** at the foot of the group. Red trash controls ask before deleting. Empty bot System and Post-history prompts display Uses preset. Provider rows show URLs and model counts; dependency rows show availability and MCP tool counts, with available entries in green.
 
 Environment and header entries are editable rows. Enter their names and values, then use the checkmark. Blank or duplicate names keep the editor open with an error.
 
-Preset, Bot, Providers, Capabilities, and Application panels keep edits in a draft. Save (floppy disk) persists the panel’s changes; Discard (X) resets them without closing. A nested editor’s Done (checkmark) updates the panel draft; its X closes without applying edits. Closing a dirty panel offers Cancel, Discard, or Save and leave. While saving, editing is blocked and the form stays at normal brightness. Editing resumes when the server confirms the write, while related lists refresh separately. Failed saves keep edits and show an error. Skills and conversation records save independently through their own floppy-disk control. Capabilities orders its controls Refresh, Discard, Save; the yellow Refresh activates saved files and is disabled while dependency edits are unsaved. Conversation controls holds Context, Summaries, Variables, and Schedules.
+Preset, Bot, Providers, Capabilities, and Application panels keep edits in a draft. Save (checkmark) persists the panel’s changes and fills with the accent color while there is something to save; a dot beside the panel title marks unsaved changes. Discard (undo arrow) resets them without closing. A nested editor’s Done (checkmark) updates the panel draft; its X closes without applying edits. Closing a dirty panel offers Cancel, Discard, or Save and leave. While saving, editing is blocked and the form stays at normal brightness. Editing resumes when the server confirms the write, while related lists refresh separately. Failed saves keep edits and show an error. Skills and conversation records save independently through their own checkmark control. Capabilities orders its controls Refresh, Discard, Save; the yellow Refresh activates saved files and is disabled while dependency edits are unsaved. Conversation controls holds Context, Summaries, Variables, and Schedules.
 
 Choosing a preset in Preset settings applies it to the current conversation immediately and persists across reloads. Search by name or slug; on phones, the picker fills the screen and the keyboard opens when you tap search. Unsaved preset edits offer Save, Discard, or Cancel before switching. Clone creates and selects a new preset. Delete lets you choose an unused preset and refuses any preset still referenced by a conversation or bot.
 
@@ -295,7 +297,7 @@ The transcript shows the selected user and assistant story. Assistant controls l
 - apply pending effects; and
 - request speech when TTS is configured.
 
-Edit opens the shared sheet. Save uses the header floppy disk; X discards the local edit immediately. Swipe controls appear only on the newest unlocked reply. Delete swipe is available directly on that message toolbar and asks for confirmation before selecting an adjacent swipe. The confirmation stays open while deleting and shows any failure.
+Edit opens the shared sheet. Save uses the header checkmark; X discards the local edit immediately. Swipe controls appear only on the newest unlocked reply. Delete swipe is available directly on that message toolbar and asks for confirmation before selecting an adjacent swipe. The confirmation stays open while deleting and shows any failure.
 
 An optional opening message uses the bot’s authored greetings as its swipes. Its arrows work normally, but regeneration is disabled because those variants are authored rather than generated.
 
@@ -454,6 +456,8 @@ Accepting a response checks its saved provider-reported prompt size against the 
 
 Reducing the preset’s live tail makes the newly eligible older exchanges compactable immediately, even without another reply. Repeated **Compact now** requests do nothing once that history is covered.
 
+Each summary in Context has a **Regenerate summary** button (the circular arrow at the right of the row). It summarizes that range again from the transcript as it reads now, using the preset's current Summary model, effort, and prompt, and replaces the summary text, including any hand edits. Use it after a fallback, a model or prompt change, or edits to the covered messages. If the call fails, the summary stays as it was and Context shows the error. Later summaries are not regenerated. Nothing regenerates automatically.
+
 The Summary prompt and its authored bot, scenario, and persona context use the same macro expansion as ordinary chat. Stored transcript and prior-summary text remain unchanged. The summary request resembles this:
 
 ```text
@@ -505,6 +509,8 @@ The preset caps how many leaves stay in automatic context, and Context lists exa
 
 You can edit a committed leaf. The edited text affects search immediately and later context while that leaf remains in the active set.
 
+While a summary is regenerating, its edit control is disabled in the open Context panel. It becomes available again when regeneration succeeds or fails. This is a local UI lock; other clients and a reopened panel do not track the running job.
+
 Editing an old message does not regenerate a leaf that already covers it. The leaf records the summary call that happened at that time. SimpleBot accepts that it may become stale instead of hiding a repair system behind the conversation.
 
 ## Use built-in tools
@@ -536,11 +542,11 @@ Variables and schedules belong to the conversation. Operator edits in Conversati
 
 ### To-dos
 
-**Conversation controls → To-dos** holds one current list for the conversation. Add or select a row to edit its title, optional due date, and note. Use the note for details such as a reward and price. Save applies immediately; the trash control confirms removal. There is no closed list or edit history. The fixed bounds are 32 items, 200 title characters, and 2,000 note characters.
+**Conversation controls → To-dos** holds one current list for the conversation. Add or select a row to edit its title, optional deadline, and note. Selecting a due date initializes the editable time to midnight at the start of that day. Clear the date to remove the deadline. Native date/time inputs follow your device locale; saved times use **Application → General → Clock format**, which offers 12-hour and 24-hour display for todos, messages, and schedules. Use the note for details such as a reward and price. Save applies immediately; the trash control confirms removal. There is no closed list or edit history. The fixed bounds are 32 items, 200 title characters, and 2,000 note characters.
 
-Grant `system__todo_list`, `system__todo_add`, and `system__todo_update` to let a bot manage the list. Model changes wait for **Apply effects** or the next message. Add returns a proposed ID, so a later update in the same attempt can reference it. Reads still show the accepted snapshot until a later attempt. Update changes supplied fields only: `dueDate: null` clears the date, `note: ""` clears the note, and `status: "done"`, `"missed"`, or `"dropped"` removes the item on acceptance. A missing ID fails. As with variables, a later accepted write can overwrite an earlier operator edit.
+Grant `system__todo_list`, `system__todo_add`, and `system__todo_update` to let a bot manage the list. Model changes wait for **Apply effects** or the next message. Add returns a proposed ID, so a later update in the same attempt can reference it. Reads still show the accepted snapshot until a later attempt. Update changes supplied fields only: `due: "2026-10-23T15:45"` sets a date and time in the application timezone, `due: null` clears the deadline, `note: ""` clears the note, and `status: "done"`, `"missed"`, or `"dropped"` removes the item on acceptance. A missing ID fails. As with variables, a later accepted write can overwrite an earlier operator edit.
 
-Put `{{todos}}` in the bot or preset post-history prompt to show the current list every turn. It includes item IDs, notes, and dates such as `2026-10-23 (due tomorrow)`. Dates follow the application timezone and become overdue on the following local day. Overdue items remain on the list until explicitly closed. Dates do not create schedules or cause replies; with schedules off, the bot can follow up when conversation resumes. Keep any judgment in the conversation itself.
+Put `{{todos}}` in the bot or preset post-history prompt to show the current list every turn. It includes item IDs, notes, and deadlines such as `2026-10-23 15:45 (due tomorrow)`. Deadlines follow the application timezone and become overdue when its local clock passes the saved minute. Changing the timezone preserves the entered date and time; daylight-saving gaps and repeated hours follow the local clock, without scheduling an instant. Overdue items remain on the list until explicitly closed. Deadlines do not create schedules or cause replies; with schedules off, the bot can follow up when conversation resumes. Keep any judgment in the conversation itself.
 
 ### Raw tool examples
 
@@ -634,6 +640,8 @@ Guide found an available room at the community center.
 Search results use readable titles and one-based message numbers. Internal database IDs never enter the model-visible result. Bot-history search excludes the current conversation and cannot cross to another bot.
 
 ### Effects do not retry
+
+Successful effects collapse into one expandable “changes applied” summary in the producing response. Pending, applying, failed, and unresolved effects remain visible. Expanding shows the original ordered evidence; collapsing never removes the actual todo or variable.
 
 An accepted effect moves through these states:
 
@@ -908,7 +916,7 @@ The default tool-call limit is 30 per turn, including tool searches. The separat
 
 Provider keys, TTS keys, and MCP/Memory environment or header values accept exact `${NAME}` environment references or `secret:NAME` saved-secret references. Literal credentials in configuration are rejected.
 
-**Saved secrets** appears in Providers and Capabilities. Add a name and value, then choose that saved secret in the connection editor. Saving or replacing a secret happens immediately; saving the connection reference still uses the panel Save. Values cannot be revealed, and replacement inputs start empty. Removing an in-use secret requires saving different connection references first. Reload secrets after a stale-write conflict.
+**Saved secrets** appears in **Providers and keys**; MCP and Memory credentials in **Capabilities** select from the same list. Add a name and value, then choose that saved secret in the connection editor. Saving or replacing a secret happens immediately; saving the connection reference still uses the panel Save. Values cannot be revealed, and replacement inputs start empty. Removing an in-use secret requires saving different connection references first. Reload secrets after a stale-write conflict.
 
 Saved values live in the operator root's private `secrets.json` (0600 on POSIX). This is file-backed storage, not encryption at rest. Backups and exports exclude it; re-enter saved credentials after restoring. Provider and speech requests use newly saved values; an already assembled attempt keeps its key. Refresh capabilities explicitly to reopen MCP/Memory connections with changed credentials. Saved secrets are not injected into Docker.
 

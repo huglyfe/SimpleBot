@@ -340,6 +340,115 @@ test('Compact now covers newly eligible history after reducing the tail without 
   }
 });
 
+test('Regenerating a summary re-reads the current transcript and keeps the old summary on failure', async (context) => {
+  const fixture = await createTestFixture();
+  context.after(() => disposeTestFixture(fixture));
+  const app = fixture.runtime.app;
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/sessions',
+    payload: { botSlug: 'echo' },
+  });
+  const { id: sessionId } = created.json<{ id: string }>();
+  const seeded = ['Lantern', 'Harbor', 'Orchard'].map((word, turn) =>
+    seedExchange(fixture, {
+      sessionId,
+      user: `${word} question`,
+      assistant: `${word} answer`,
+      now: '2026-01-01T00:00:00.000Z',
+      lock: turn < 2,
+    }),
+  );
+  const path = join(fixture.root, 'presets', 'default.json');
+  const preset = JSON.parse(await readFile(path, 'utf8')) as {
+    context: { liveTailExchanges: number };
+  };
+  preset.context = { liveTailExchanges: 2 };
+  await writeFile(path, JSON.stringify(preset));
+  fixture.faux.setResponses([fauxAssistantMessage('Lantern summary.')]);
+  const compact = () =>
+    app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/compact` });
+  assert.equal((await compact()).statusCode, 204);
+  preset.context.liveTailExchanges = 1;
+  await writeFile(path, JSON.stringify(preset));
+  fixture.faux.setResponses([fauxAssistantMessage('Harbor summary.')]);
+  assert.equal((await compact()).statusCode, 204);
+  const evidence = async () =>
+    (
+      await app.inject({ url: `/api/sessions/${sessionId}/context` })
+    ).json<SessionContext>();
+  const [first, second] = (await evidence()).leaves;
+  if (first === undefined || second === undefined)
+    throw new Error('Missing leaves');
+  const regenerate = (leafId: string) =>
+    app.inject({
+      method: 'POST',
+      url: `/api/sessions/${sessionId}/leaves/${leafId}/regenerate`,
+    });
+
+  // A hand-edited prior summary and edited covered history are what the
+  // regenerated summary call sees.
+  assert.equal(
+    (
+      await app.inject({
+        method: 'PATCH',
+        url: `/api/sessions/${sessionId}/leaves/${first.id}/source`,
+        payload: { source: 'Edited lantern summary.' },
+      })
+    ).statusCode,
+    204,
+  );
+  assert.equal(
+    (
+      await app.inject({
+        method: 'PATCH',
+        url: `/api/sessions/${sessionId}/variants/${seeded[1]?.variantId ?? ''}/source`,
+        payload: { source: 'Harbor answer, revised.' },
+      })
+    ).statusCode,
+    200,
+  );
+
+  const beforeFailure = await evidence();
+  fixture.faux.setResponses([
+    fauxAssistantMessage('', {
+      stopReason: 'error',
+      errorMessage: 'provider unavailable',
+    }),
+  ]);
+  const failed = await regenerate(second.id);
+  assert.equal(failed.statusCode, 500);
+  assert.match(failed.body, /provider unavailable/u);
+  assert.deepEqual(await evidence(), beforeFailure);
+  assert.equal(beforeFailure.leaves[1]?.summary, 'Harbor summary.');
+
+  fixture.faux.setResponses([
+    (providerContext) => {
+      const input = JSON.stringify(providerContext.messages);
+      assert.match(input, /Edited lantern summary\./u);
+      assert.match(input, /Harbor answer, revised\./u);
+      assert.doesNotMatch(input, /Lantern question|Orchard/u);
+      return fauxAssistantMessage('Revised harbor summary.');
+    },
+  ]);
+  assert.equal((await regenerate(second.id)).statusCode, 204);
+  assert.deepEqual(
+    (await evidence()).leaves.map((leaf) => [
+      leaf.id,
+      leaf.summary,
+      leaf.summaryOutcome,
+    ]),
+    [
+      [first.id, 'Edited lantern summary.', 'model'],
+      [second.id, 'Revised harbor summary.', 'model'],
+    ],
+  );
+  const search = await app.inject({ url: '/api/search?q=Revised' });
+  assert.match(search.body, /\[Revised\] harbor summary/u);
+
+  assert.equal((await regenerate('missing')).statusCode, 404);
+});
+
 async function projection(address: string, sessionId: string) {
   const response = await fetch(`${address}/api/sessions/${sessionId}`);
   if (!response.ok) throw new Error(await response.text());

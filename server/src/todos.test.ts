@@ -53,7 +53,7 @@ test('to-do tools keep accepted reads frozen and apply only the selected swipe, 
         [
           fauxToolCall('system__todo_add', {
             title: 'Submit application',
-            dueDate: '2026-10-22',
+            due: '2026-10-22T00:00',
             note: 'Reward: dinner',
           }),
           fauxToolCall('system__todo_list', {}),
@@ -80,6 +80,7 @@ test('to-do tools keep accepted reads frozen and apply only the selected swipe, 
         [
           fauxToolCall('system__todo_update', {
             id,
+            due: '2026-10-22T15:45',
             note: 'Reward: dinner. Price: chores.',
           }),
         ],
@@ -99,7 +100,7 @@ test('to-do tools keep accepted reads frozen and apply only the selected swipe, 
     {
       id,
       title: 'Submit application',
-      dueDate: '2026-10-22',
+      due: '2026-10-22T15:45',
       note: 'Reward: dinner. Price: chores.',
     },
   ]);
@@ -112,7 +113,7 @@ test('to-do tools keep accepted reads frozen and apply only the selected swipe, 
     (input) => {
       assert.match(
         JSON.stringify(input.messages),
-        /2026-10-22 \(due tomorrow\)/u,
+        /2026-10-22 15:45 \(due tomorrow\)/u,
       );
       assert.doesNotMatch(JSON.stringify(input.messages), /Discarded goal/u);
       return fauxAssistantMessage(
@@ -140,7 +141,7 @@ test('operator to-dos validate, patch by ID, enforce the cap, and remain session
   const url = `/api/sessions/${session}/todos`;
   for (const payload of [
     { title: ' ' },
-    { title: 'Invalid date', dueDate: '2026-02-30' },
+    { title: 'Invalid date', due: '2026-02-30T00:00' },
     { title: 'Long', note: 'x'.repeat(2001) },
   ]) {
     assert.equal(
@@ -156,7 +157,7 @@ test('operator to-dos validate, patch by ID, enforce the cap, and remain session
         url,
         payload: {
           title: '  Goal  ',
-          dueDate: '2026-10-22',
+          due: '2026-10-22T00:00',
           note: 'Keep this',
         },
       })
@@ -179,13 +180,13 @@ test('operator to-dos validate, patch by ID, enforce the cap, and remain session
       await fixture.runtime.app.inject({
         method: 'PATCH',
         url: `${url}/${todo.id}`,
-        payload: { dueDate: null },
+        payload: { due: null },
       })
     ).statusCode,
     204,
   );
   assert.deepEqual(fixture.runtime.storage.listTodos(session), [
-    { ...todo, dueDate: null },
+    { ...todo, due: null },
   ]);
   assert.equal(
     (
@@ -210,7 +211,7 @@ test('operator to-dos validate, patch by ID, enforce the cap, and remain session
   for (let i = 1; i < MAX_TODOS; i++)
     fixture.runtime.storage.addTodo(
       session,
-      { id: randomUUID(), title: 'Another', dueDate: null, note: '' },
+      { id: randomUUID(), title: 'Another', due: null, note: '' },
       now,
     );
   assert.equal(
@@ -264,7 +265,7 @@ test('to-do effects commit atomically, continue after failure, and never replay 
     effects: [
       {
         type: 'todo_add',
-        arguments: { id, title: 'First', dueDate: null, note: '' },
+        arguments: { id, title: 'First', due: '2026-10-22T15:45', note: '' },
       },
       {
         type: 'todo_update',
@@ -288,7 +289,7 @@ test('to-do effects commit atomically, continue after failure, and never replay 
     effects: [
       {
         type: 'todo_add',
-        arguments: { id, title: 'First', dueDate: null, note: '' },
+        arguments: { id, title: 'First', due: '2026-10-22T15:45', note: '' },
       },
       {
         type: 'todo_update',
@@ -321,6 +322,10 @@ test('to-do effects commit atomically, continue after failure, and never replay 
   assert.equal(
     reopened.runtime.storage.listTodos(session)[0]?.title,
     'Operator edit',
+  );
+  assert.equal(
+    reopened.runtime.storage.listTodos(session)[0]?.due,
+    '2026-10-22T15:45',
   );
   const effects = reopened.runtime.storage
     .projection(session)

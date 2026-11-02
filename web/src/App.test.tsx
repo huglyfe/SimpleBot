@@ -18,6 +18,7 @@ const api = vi.hoisted(() => ({
   discardAttachment: vi.fn(),
   getBootstrap: vi.fn(),
   getPositions: vi.fn(),
+  getPresetList: vi.fn(async () => []),
   getSession: vi.fn(),
   importBot: vi.fn(),
   mutateSession: vi.fn(),
@@ -32,6 +33,7 @@ vi.mock('./api.js', () => api);
 const bootstrap: Bootstrap = {
   version: '0.10.0',
   ttsConfigured: false,
+  time: { timezone: 'UTC', clockFormat: '24' },
   bots: [{ slug: 'seraphina', name: 'Seraphina', avatarUrl: null }],
   sessions: [],
 };

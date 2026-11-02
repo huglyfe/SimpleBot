@@ -3,7 +3,14 @@
  * control bar and the shared focused editor. Live output overlays the same
  * assistant row so its disclosure survives completion.
  */
-import { memo, useEffect, useRef, useState, type ReactElement } from 'react';
+import {
+  memo,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import {
   NO_RESPONSE,
   parseScheduledEvent,
@@ -11,9 +18,10 @@ import {
 } from '@simplebot/shared';
 import type { MessagePosition, StoredVariant, Trace } from '@simplebot/shared';
 
+import { ChevronDownIcon, ChevronUpIcon } from '../../icons.js';
 import { errorMessage } from '../../lib/errorMessage.js';
 import { cx } from '../../lib/cx.js';
-import { formatTime } from '../../lib/format.js';
+import { formatTime, useTimePreferences } from '../../lib/format.js';
 import { MessageControls } from './MessageControls.js';
 import { FocusedEditor } from '../sheets/FocusedEditor.js';
 import { ReasoningDisclosure } from './ReasoningDisclosure.js';
@@ -107,6 +115,7 @@ export const UserMessageRow = memo(function UserMessageRow({
   update: TranscriptUpdate;
   busy: boolean;
 }): ReactElement {
+  const time = useTimePreferences();
   const occurrence = parseScheduledEvent(position.source);
   const scheduled = occurrence !== null;
   const source = scheduled ? occurrence.prompt : position.source;
@@ -120,7 +129,7 @@ export const UserMessageRow = memo(function UserMessageRow({
           <p className="msg-occurrence">
             <span className="msg-occurrence-name">{occurrence.name}</span>
             <span className="msg-occurrence-time">
-              {formatTime(occurrence.ranAt)}
+              {formatTime(occurrence.ranAt, time)}
             </span>
           </p>
         )}
@@ -195,31 +204,60 @@ function EffectList({
   variant: StoredVariant;
   onAction: TranscriptAction;
 }): ReactElement | null {
+  const [expanded, setExpanded] = useState(false);
+  const bodyId = useId();
   if (variant.effects.length === 0) return null;
+  const applied = variant.effects.filter(
+    (effect) => effect.state === 'applied',
+  ).length;
+  const visible = variant.effects.filter(
+    (effect) => expanded || effect.state !== 'applied',
+  );
   return (
-    <ol className="msg-effects" aria-label="Response effects">
-      {variant.effects.map((effect) => (
-        <li key={effect.id} className={`is-${effect.state}`}>
-          <span className="msg-effect-name">{effect.type}</span>
-          <span className="msg-effect-status">
-            {EFFECT_STATUS[effect.state]}
+    <div>
+      {applied === 0 ? null : (
+        <button
+          type="button"
+          className="reasoning-toggle"
+          aria-expanded={expanded}
+          aria-controls={bodyId}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+          <span>
+            {applied} {applied === 1 ? 'change' : 'changes'} applied
           </span>
-          <code>{JSON.stringify(effect.arguments)}</code>
-          {effect.result === null ? null : <code>{effect.result}</code>}
-          {effect.state === 'unresolved' ? (
-            <button
-              type="button"
-              className="ui-button is-small is-quiet"
-              onClick={() => {
-                onAction(`/effects/${effect.id}/resolve`, 'POST');
-              }}
-            >
-              Mark resolved
-            </button>
-          ) : null}
-        </li>
-      ))}
-    </ol>
+        </button>
+      )}
+      <ol
+        id={bodyId}
+        className="msg-effects"
+        aria-label="Response effects"
+        hidden={visible.length === 0}
+      >
+        {visible.map((effect) => (
+          <li key={effect.id} className={`is-${effect.state}`}>
+            <span className="msg-effect-name">{effect.type}</span>
+            <span className="msg-effect-status">
+              {EFFECT_STATUS[effect.state]}
+            </span>
+            <code>{JSON.stringify(effect.arguments)}</code>
+            {effect.result === null ? null : <code>{effect.result}</code>}
+            {effect.state === 'unresolved' ? (
+              <button
+                type="button"
+                className="ui-button is-small is-quiet"
+                onClick={() => {
+                  onAction(`/effects/${effect.id}/resolve`, 'POST');
+                }}
+              >
+                Mark resolved
+              </button>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

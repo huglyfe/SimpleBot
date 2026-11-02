@@ -81,6 +81,8 @@ Read the nearest scoped guide before working in one of these trees.
 
 ## Verification
 
+In the macOS agent sandbox, `--single-process` can run isolated Chromium checks but has failed during browser-context reuse in the acceptance suite. An isolated pass does not establish full acceptance. Keep the suite unchanged and report full acceptance as unverified unless it completes successfully.
+
 - `pnpm check` is the canonical proof. Run it locally; CI runs the same gates as parallel jobs. Each implementation slice expands it with its real proof, and every gate must stand alone.
 - Use focused tests while iterating and report unavailable proof plainly.
 - Stop development servers by their captured PID before canonical smoke or acceptance.

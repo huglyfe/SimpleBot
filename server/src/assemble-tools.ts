@@ -101,6 +101,17 @@ const HISTORY_SEARCH_LIMIT = 5;
 const SESSION_LIST_LIMIT = 20;
 const TOOL_SEARCH_LIMIT = 10;
 
+const todoDueParameter = Type.Optional(
+  Type.Union([
+    Type.String({
+      pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$',
+      description:
+        'Local date and time in the application timezone: YYYY-MM-DDTHH:mm. Null clears the deadline.',
+    }),
+    Type.Null(),
+  ]),
+);
+
 export const SYSTEM_TOOL_DEFINITIONS = deepFreeze([
   tool(
     'system__calculator',
@@ -175,9 +186,7 @@ export const SYSTEM_TOOL_DEFINITIONS = deepFreeze([
     'Add a session to-do.',
     {
       title: Type.String({ minLength: 1, maxLength: TODO_TITLE_MAX }),
-      dueDate: Type.Optional(
-        Type.Union([Type.String({ format: 'date' }), Type.Null()]),
-      ),
+      due: todoDueParameter,
       note: Type.Optional(Type.String({ maxLength: TODO_NOTE_MAX })),
     },
     async (_context, arguments_) => ({
@@ -193,9 +202,7 @@ export const SYSTEM_TOOL_DEFINITIONS = deepFreeze([
       title: Type.Optional(
         Type.String({ minLength: 1, maxLength: TODO_TITLE_MAX }),
       ),
-      dueDate: Type.Optional(
-        Type.Union([Type.String({ format: 'date' }), Type.Null()]),
-      ),
+      due: todoDueParameter,
       note: Type.Optional(Type.String({ maxLength: TODO_NOTE_MAX })),
       status: Type.Optional(
         Type.Union(

@@ -14,6 +14,8 @@ import { ConfirmDialog } from './components/primitives/ConfirmDialog.js';
 import { setSpeechPlaybackBlocked } from './components/transcript/speech-playback.js';
 
 const PIN_KEY = `${CLIENT_NAMESPACE}:privacy-pin`;
+const PIN_PATTERN = '[0-9]{4,20}';
+const PIN_FORMAT = new RegExp(`^${PIN_PATTERN}$`, 'u');
 const GRACE_MS = 30_000;
 const PrivacyContext = createContext<{
   enabled: boolean;
@@ -53,7 +55,7 @@ async function matches(pin: string, saved: string): Promise<boolean> {
   return (
     salt !== undefined &&
     hash !== undefined &&
-    /^[0-9]{6}$/u.test(pin) &&
+    PIN_FORMAT.test(pin) &&
     (await digest(pin, salt)) === hash
   );
 }
@@ -176,8 +178,8 @@ export function PrivacyGate({ children }: { children: ReactNode }) {
         async save(current, next) {
           if (saved !== null && !(await matches(current, saved)))
             throw new Error('Incorrect current PIN.');
-          if (next !== null && !/^[0-9]{6}$/u.test(next))
-            throw new Error('Use exactly six digits.');
+          if (next !== null && !PIN_FORMAT.test(next))
+            throw new Error('Use 4–20 digits.');
           const salt = crypto.randomUUID();
           const value =
             next === null ? null : `${salt}:${await digest(next, salt)}`;
@@ -214,8 +216,8 @@ export function PrivacyGate({ children }: { children: ReactNode }) {
             id="unlock-pin"
             type="password"
             inputMode="numeric"
-            pattern="[0-9]{6}"
-            maxLength={6}
+            pattern={PIN_PATTERN}
+            maxLength={20}
             autoComplete="off"
             value={pin}
             onChange={(event) => setPin(event.target.value)}
@@ -293,6 +295,9 @@ export function PrivacySettings() {
           onConfirm={save}
           body={
             <div className="pin-fields">
+              {action === 'set' ? (
+                <p className="ui-hint">Use 4–20 digits.</p>
+              ) : null}
               {(
                 [
                   ['current', 'Current PIN'],
@@ -306,7 +311,7 @@ export function PrivacySettings() {
                     <input
                       type="password"
                       inputMode="numeric"
-                      maxLength={6}
+                      maxLength={20}
                       autoComplete="off"
                       value={pins[key]}
                       onChange={(event) =>

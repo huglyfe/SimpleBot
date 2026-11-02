@@ -9,8 +9,8 @@
 .settings-section {
   display: grid;
   gap: var(--space-md);
-  border-top: 1px solid var(--border);
-  padding: var(--space-md) 0;
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-lg) 0;
 }
 
 .settings-section:first-of-type {
@@ -25,8 +25,11 @@
 
 .settings-section > header h3 {
   margin: 0;
-  font-size: var(--text-body);
+  color: var(--text-muted);
+  font-size: var(--text-micro);
   font-weight: var(--weight-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .settings-section > header p {
@@ -37,7 +40,7 @@
 
 .settings-section-body {
   display: grid;
-  gap: var(--space-md);
+  gap: var(--space-lg);
 }
 
 .settings-group {
@@ -248,43 +251,45 @@
 .record-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
   margin: 0;
   padding: 0;
   list-style: none;
 }
-
+.record-list:empty {
+  display: none;
+}
 .record-row {
   position: relative;
 }
-.record-row:not(.is-action) {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--surface-raised);
+.record-row + .record-row {
+  border-top: 1px solid var(--border-subtle);
 }
-.record-select.ui-button {
+.record-list .ui-button.is-quiet {
   display: block;
   width: 100%;
-  padding: var(--space-sm);
-  border-radius: var(--radius-control);
+  border-radius: 0;
+  padding: var(--space-sm) var(--space-md);
   text-align: left;
   white-space: normal;
 }
-.record-row.is-removable .record-select {
+.record-row.has-trailing .record-select {
   padding-right: calc(var(--touch-target) + var(--space-sm));
 }
 .record-select > strong {
   display: block;
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: var(--text-body);
   font-weight: var(--weight-medium);
   color: var(--text);
 }
 .record-preview,
 .record-detail {
   color: var(--text-muted);
-  font-size: var(--text-micro);
+  font-size: var(--text-label);
   font-weight: var(--weight-regular);
   overflow-wrap: anywhere;
 }
@@ -297,25 +302,21 @@
 .record-detail {
   display: grid;
 }
-.record-remove {
+.record-trailing {
+  display: flex;
   position: absolute;
   top: 50%;
   right: var(--space-xs);
   transform: translateY(-50%);
 }
-.record-add.ui-button.is-quiet {
+/* Adding is a quiet accent line at the foot of the group. */
+.record-list .record-add.is-quiet {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  width: 100%;
-  border: 1px solid var(--accent-soft);
-  border-radius: var(--radius-sm);
   color: var(--accent);
-}
-.record-add strong {
-  font-size: var(--text-label);
-  font-weight: var(--weight-medium);
+  text-align: center;
 }
 
 .provider-summary {

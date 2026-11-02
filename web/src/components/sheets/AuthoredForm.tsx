@@ -4,7 +4,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { CloseIcon, SaveIcon } from '../../icons.js';
+import { CheckIcon, UndoIcon } from '../../icons.js';
 import { SheetActions, useSheetEditor } from '../primitives/Sheet.js';
 import { IconButton } from '../primitives/IconButton.js';
 
@@ -65,18 +65,17 @@ export function AuthoredForm({
             discard();
           }}
         >
-          <CloseIcon />
+          <UndoIcon />
         </IconButton>
         <button
           type="submit"
           form={formId}
-          className="ui-button is-primary ui-editor-action"
+          className="ui-icon-button ui-save"
           aria-label={saving ? 'Saving…' : 'Save'}
           title="Save"
           disabled={!changed || disabled}
         >
-          <SaveIcon />
-          Save
+          <CheckIcon />
         </button>
       </SheetActions>
       <fieldset className="settings-group" inert={disabled}>

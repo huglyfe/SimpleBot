@@ -30,7 +30,7 @@ import {
 } from './assemble.js';
 import type { AuthoredFiles } from './authored.js';
 import type { ActivatedCapabilities } from './capabilities.js';
-import { compactSession } from './continuity.js';
+import { compactSession, regenerateLeaf } from './continuity.js';
 import type { ExternalEffectOutcome, Storage } from './storage.js';
 
 interface Attempt {
@@ -54,6 +54,7 @@ interface Generation {
 
 type EffectOperation =
   | { kind: 'compact'; sessionId: string }
+  | { kind: 'regenerate-leaf'; sessionId: string; leafId: string }
   | { kind: 'accept'; sessionId: string; positionId: string };
 
 export interface AttemptManagerOptions {
@@ -129,6 +130,10 @@ export class AttemptManager {
 
   async requestCompaction(sessionId: string): Promise<void> {
     await this.#enqueueEffect({ kind: 'compact', sessionId });
+  }
+
+  async regenerateLeaf(sessionId: string, leafId: string): Promise<void> {
+    await this.#enqueueEffect({ kind: 'regenerate-leaf', sessionId, leafId });
   }
 
   async close(): Promise<void> {
@@ -295,6 +300,18 @@ export class AttemptManager {
 
   async #runEffect(operation: EffectOperation): Promise<void> {
     const { sessionId } = operation;
+    const summaryOptions = {
+      sessionId,
+      storage: this.#options.storage,
+      authored: this.#options.authored,
+      models: this.#options.models,
+      signal: this.#shutdown.signal,
+      now: this.#now.bind(this),
+    };
+    if (operation.kind === 'regenerate-leaf') {
+      await regenerateLeaf({ ...summaryOptions, leafId: operation.leafId });
+      return;
+    }
     let promptTokens: number | null | undefined;
     if (operation.kind === 'accept') {
       const timezone = (await this.#options.authored.readConfig()).value
@@ -318,12 +335,7 @@ export class AttemptManager {
       if (schedulesChanged) this.#options.schedulesChanged(timezone);
     }
     await compactSession({
-      sessionId,
-      storage: this.#options.storage,
-      authored: this.#options.authored,
-      models: this.#options.models,
-      signal: this.#shutdown.signal,
-      now: this.#now.bind(this),
+      ...summaryOptions,
       ...(promptTokens === undefined ? {} : { promptTokens }),
     });
   }

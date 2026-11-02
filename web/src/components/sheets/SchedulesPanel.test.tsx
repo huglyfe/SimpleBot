@@ -22,7 +22,6 @@ function renderPanel(
   const onDelete = vi.fn(() => Promise.resolve());
   render(
     <SchedulesPanel
-      timezone="America/New_York"
       schedules={schedules}
       onSave={onSave}
       onDelete={onDelete}
@@ -32,9 +31,9 @@ function renderPanel(
 }
 
 describe('SchedulesPanel', () => {
-  it('opens the shared create editor from the collection row', async () => {
+  it('creates a schedule from the collection row using application timezone ownership', async () => {
     const user = userEvent.setup();
-    renderPanel();
+    const { onSave } = renderPanel();
 
     expect(screen.queryByLabelText('Schedule name')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add schedule' }));
@@ -42,14 +41,7 @@ describe('SchedulesPanel', () => {
       'ui-switch',
     );
     expect(screen.getByRole('button', { name: 'Discard' })).toHaveFocus();
-  });
-
-  it('leaves timezone ownership with the application setting', async () => {
-    const user = userEvent.setup();
-    const { onSave } = renderPanel();
-
     expect(screen.queryByLabelText('Timezone')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Add schedule' }));
     await user.click(screen.getByRole('button', { name: 'Create schedule' }));
     expect(onSave).toHaveBeenCalledWith({
       name: 'Check in',
@@ -99,7 +91,6 @@ describe('SchedulesPanel', () => {
     const onDelete = vi.fn(() => Promise.reject(new Error('Session locked')));
     render(
       <SchedulesPanel
-        timezone="America/New_York"
         schedules={[MORNING_SCHEDULE]}
         onSave={vi.fn(() => Promise.resolve())}
         onDelete={onDelete}
@@ -122,7 +113,6 @@ describe('SchedulesPanel', () => {
   it('shows why a schedule has no next run instead of hiding it', () => {
     render(
       <SchedulesPanel
-        timezone="America/New_York"
         schedules={[
           {
             id: '00000000-0000-4000-8000-000000000009',

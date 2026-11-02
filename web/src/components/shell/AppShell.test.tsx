@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,18 +8,24 @@ import type { Bootstrap } from '@simplebot/shared';
 import * as api from '../../api.js';
 import { AppShell, PHONE_QUERY } from './AppShell.js';
 
-vi.mock('../../api.js', () => ({ searchSessions: vi.fn() }));
+vi.mock('../../api.js', () => ({
+  searchSessions: vi.fn(),
+  getPresetList: vi.fn(async () => [
+    { slug: 'default', name: 'Evening Story', model: 'claude-opus-5-5' },
+  ]),
+}));
 
 const data: Bootstrap = {
   version: '0.10.0',
   ttsConfigured: false,
+  time: { timezone: 'UTC', clockFormat: '24' },
   bots: [{ slug: 'seraphina', name: 'Seraphina', avatarUrl: null }],
   sessions: [
     {
       id: 'session-1',
       botSlug: 'seraphina',
       presetSlug: 'default',
-      title: 'Morning walk',
+      title: 'Morning_walk * notes',
       updatedAt: '2026-08-14T09:00:00.000Z',
     },
   ],
@@ -52,27 +59,29 @@ function renderShell({
   onOpenPreset?: () => void;
 } = {}) {
   return render(
-    <AppShell
-      data={bootstrap}
-      activeSessionId="session-1"
-      activeBotSlug="seraphina"
-      onSelectSession={noop}
-      onNewConversation={noop}
-      onRenameSession={onRenameSession}
-      onDeleteSession={noop}
-      onManageBot={noop}
-      onDeleteBotConversations={noop}
-      onAddBot={onAddBot}
-      error={null}
-      onOpenProviders={noop}
-      onOpenCapabilities={onOpenCapabilities}
-      onOpenApplication={noop}
-      onOpenBotSheet={noop}
-      onOpenConversation={onOpenConversation}
-      onOpenPreset={onOpenPreset}
-    >
-      <p>transcript</p>
-    </AppShell>,
+    <QueryClientProvider client={new QueryClient()}>
+      <AppShell
+        data={bootstrap}
+        activeSessionId="session-1"
+        activeBotSlug="seraphina"
+        onSelectSession={noop}
+        onNewConversation={noop}
+        onRenameSession={onRenameSession}
+        onDeleteSession={noop}
+        onManageBot={noop}
+        onDeleteBotConversations={noop}
+        onAddBot={onAddBot}
+        error={null}
+        onOpenProviders={noop}
+        onOpenCapabilities={onOpenCapabilities}
+        onOpenApplication={noop}
+        onOpenBotSheet={noop}
+        onOpenConversation={onOpenConversation}
+        onOpenPreset={onOpenPreset}
+      >
+        <p>transcript</p>
+      </AppShell>
+    </QueryClientProvider>,
   );
 }
 
@@ -185,7 +194,7 @@ describe('AppShell drawer', () => {
       .mockReturnValueOnce(saved.promise);
     renderShell({ onRenameSession: rename });
     await user.click(
-      screen.getByRole('button', { name: 'Actions for Morning walk' }),
+      screen.getByRole('button', { name: 'Actions for Morning_walk * notes' }),
     );
     await user.click(screen.getByRole('menuitem', { name: 'Edit title' }));
     const title = screen.getByRole('textbox', { name: 'Conversation title' });
@@ -337,6 +346,17 @@ describe('AppShell drawer', () => {
     expect(onOpenPreset).toHaveBeenCalledOnce();
   });
 
+  it('names the active bot and its preset in the header identity', async () => {
+    setViewport(false);
+    renderShell();
+
+    const header = screen.getByRole('banner');
+    expect(
+      await within(header).findByText('Evening Story'),
+    ).toBeInTheDocument();
+    expect(within(header).getByText('Seraphina')).toBeInTheDocument();
+  });
+
   it('names the global destinations without a Tools surface', () => {
     setViewport(false);
     renderShell();
@@ -385,7 +405,7 @@ describe('AppShell drawer', () => {
     expect(
       await screen.findByText('…past the [lighthouse] road…'),
     ).toBeVisible();
-    expect(screen.getByText('Morning walk')).toBeVisible();
+    expect(screen.getByText('Morning_walk * notes')).toBeVisible();
     expect(api.searchSessions).toHaveBeenCalledWith(
       'lighthouse',
       expect.any(AbortSignal),
@@ -417,7 +437,7 @@ describe('AppShell drawer', () => {
     expect(
       screen.queryByText('…past the [lighthouse] road…'),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText('Morning walk')).not.toBeInTheDocument();
+    expect(screen.queryByText('Morning_walk * notes')).not.toBeInTheDocument();
     nextSearch.resolve([]);
   });
 
@@ -434,7 +454,7 @@ describe('AppShell drawer', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Search unavailable. Showing title matches only.',
     );
-    expect(screen.getByText('Morning walk')).toBeVisible();
+    expect(screen.getByText('Morning_walk * notes')).toBeVisible();
     vi.mocked(api.searchSessions).mockResolvedValueOnce([]);
     await userEvent.clear(search);
     await userEvent.type(search, 'missing');
@@ -469,12 +489,12 @@ it('keeps title and remote search matches under their owning bots', async () => 
   );
   await screen.findByText('A morning remembered');
   expect(
-    screen.getByText('Morning walk').closest('.bot-group'),
+    screen.getByText('Morning_walk * notes').closest('.bot-group'),
   ).toHaveTextContent('Seraphina');
   expect(screen.getByText('Evening').closest('.bot-group')).toHaveTextContent(
     'Ada',
   );
   expect(
     screen.getByText('Evening').closest('.bot-group'),
-  ).not.toHaveTextContent('Morning walk');
+  ).not.toHaveTextContent('Morning_walk * notes');
 });

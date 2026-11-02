@@ -1,5 +1,5 @@
 PRAGMA foreign_keys = ON;
-PRAGMA user_version = 17;
+PRAGMA user_version = 19;
 
 CREATE TABLE sessions (
   id TEXT PRIMARY KEY,
@@ -62,7 +62,6 @@ CREATE TABLE leaves (
   session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   start_ordinal INTEGER NOT NULL,
   end_ordinal INTEGER NOT NULL,
-  source TEXT NOT NULL,
   prior_leaf_id TEXT REFERENCES leaves(id),
   trigger_position_id TEXT NOT NULL REFERENCES message_positions(id) ON DELETE CASCADE,
   state TEXT NOT NULL CHECK (state IN ('pending', 'committed')),
@@ -110,7 +109,7 @@ CREATE TABLE session_todos (
   session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   id TEXT NOT NULL,
   title TEXT NOT NULL,
-  due_date TEXT,
+  due TEXT,
   note TEXT NOT NULL,
   PRIMARY KEY (session_id, id)
 ) STRICT;

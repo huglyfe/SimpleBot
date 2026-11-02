@@ -10,7 +10,7 @@ import {
   RefreshIcon,
   TrashIcon,
 } from '../../icons.js';
-import { formatTime } from '../../lib/format.js';
+import { formatTime, useTimePreferences } from '../../lib/format.js';
 import { ConfirmDialog } from '../primitives/ConfirmDialog.js';
 import { IconButton } from '../primitives/IconButton.js';
 import { MessageSpeechControl } from './MessageSpeechControl.js';
@@ -56,6 +56,7 @@ export function MessageControls({
   onEdit,
 }: MessageControlsProps): ReactElement {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const time = useTimePreferences();
   const [provenanceOpen, setProvenanceOpen] = useState(false);
 
   const swipeDisabledReason = busy ? BUSY_REASON : undefined;
@@ -112,7 +113,7 @@ export function MessageControls({
     <>
       <footer className={`msg-footer${role === 'user' ? ' is-user' : ''}`}>
         {leadingControls}
-        <span className="msg-time">{formatTime(createdAt)}</span>
+        <span className="msg-time">{formatTime(createdAt, time)}</span>
         {provenance === null ? null : (
           <button
             type="button"

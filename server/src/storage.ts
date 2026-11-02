@@ -52,7 +52,6 @@ import {
   type Prepare,
   type SessionRow,
   type StoredAttachment,
-  type StoredLeaf,
   type StoredSchedule,
 } from './storage-rows.js';
 
@@ -68,7 +67,7 @@ export {
   type HistoryMatch,
   type SessionMatch,
 } from './storage-search.js';
-export type { StoredAttachment, StoredLeaf, StoredSchedule, ContextPosition };
+export type { StoredAttachment, StoredSchedule, ContextPosition };
 
 /** Hard engine ceiling for the complete applied variable map of one session. */
 const MAX_VARIABLES_PER_SESSION = 256;
@@ -997,8 +996,8 @@ export class Storage {
 
   listTodos(sessionId: string): Todo[] {
     return this.statements(
-      `SELECT id, title, due_date AS dueDate, note FROM session_todos
-       WHERE session_id = ? ORDER BY due_date IS NULL, due_date, rowid`,
+      `SELECT id, title, due, note FROM session_todos
+       WHERE session_id = ? ORDER BY due IS NULL, due, rowid`,
     ).all(sessionId) as Todo[];
   }
 
@@ -1011,8 +1010,8 @@ export class Storage {
           `To-do limit of ${String(MAX_TODOS)} reached`,
         );
       this.statements(
-        `INSERT INTO session_todos (session_id, id, title, due_date, note) VALUES (?, ?, ?, ?, ?)`,
-      ).run(sessionId, todo.id, todo.title, todo.dueDate, todo.note);
+        `INSERT INTO session_todos (session_id, id, title, due, note) VALUES (?, ?, ?, ?, ?)`,
+      ).run(sessionId, todo.id, todo.title, todo.due, todo.note);
       this.#touch(sessionId, now);
     })();
   }
@@ -1030,10 +1029,10 @@ export class Storage {
         ).run(sessionId, update.id);
       } else {
         this.statements(
-          `UPDATE session_todos SET title = ?, due_date = ?, note = ? WHERE session_id = ? AND id = ?`,
+          `UPDATE session_todos SET title = ?, due = ?, note = ? WHERE session_id = ? AND id = ?`,
         ).run(
           update.title ?? current.title,
-          update.dueDate === undefined ? current.dueDate : update.dueDate,
+          update.due === undefined ? current.due : update.due,
           update.note ?? current.note,
           sessionId,
           update.id,
@@ -1352,11 +1351,12 @@ export class Storage {
     }))();
   }
 
+  /** Persist coverage; keep the frozen summary input only for this call. */
   createPendingLeaf(input: {
     sessionId: string;
     liveTailExchanges: number;
     now: string;
-  }): StoredLeaf | null {
+  }) {
     return this.#database.transaction(() => {
       const range = this.#prospectiveCompactionRange(
         input.sessionId,
@@ -1365,52 +1365,113 @@ export class Storage {
       if (range === null) return null;
       const { triggerPositionId, priorLeafId, startOrdinal, endOrdinal } =
         range;
-      const source = this.#positions(input.sessionId, {
-        where: 'p.ordinal BETWEEN ? AND ?',
-        parameters: [startOrdinal, endOrdinal],
-      })
-        .map((position) => {
-          if (position.role === 'user') {
-            const images = position.attachments
-              .map((attachment) => `[Image attachment: ${attachment.filename}]`)
-              .join('\n');
-            return `User:\n${position.source}${images.length === 0 ? '' : `\n${images}`}`;
-          }
-          return position.variant.source.trim() === ''
-            ? ''
-            : `Assistant:\n${position.variant.source}`;
-        })
-        .filter(Boolean)
-        .join('\n\n');
-      if (source.length === 0) return null;
-      const leaf: StoredLeaf = {
-        id: randomUUID(),
+      const source = this.#rangeSource(
+        input.sessionId,
         startOrdinal,
         endOrdinal,
-        source,
-        priorLeafId,
-        triggerPositionId,
-        state: 'pending',
-        summary: null,
-        createdAt: input.now,
-      };
+      );
+      if (source.length === 0) return null;
+      const id = randomUUID();
       this.statements(
         `INSERT INTO leaves (
-           id, session_id, start_ordinal, end_ordinal, source, prior_leaf_id,
+           id, session_id, start_ordinal, end_ordinal, prior_leaf_id,
            trigger_position_id, state, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
       ).run(
-        leaf.id,
+        id,
         input.sessionId,
-        leaf.startOrdinal,
-        leaf.endOrdinal,
-        leaf.source,
-        leaf.priorLeafId,
-        leaf.triggerPositionId,
-        leaf.createdAt,
+        startOrdinal,
+        endOrdinal,
+        priorLeafId,
+        triggerPositionId,
+        input.now,
       );
-      return leaf;
+      return { id, ...range, source };
     })();
+  }
+
+  /** Render a committed leaf's range from the current canonical transcript. */
+  leafRegenerationInput(sessionId: string, leafId: string) {
+    return this.#database.transaction(() => {
+      const row = this.statements(
+        `SELECT start_ordinal, end_ordinal, prior_leaf_id, trigger_position_id
+         FROM leaves WHERE id = ? AND session_id = ? AND state = 'committed'`,
+      ).get(leafId, sessionId) as
+        | {
+            start_ordinal: number;
+            end_ordinal: number;
+            prior_leaf_id: string | null;
+            trigger_position_id: string;
+          }
+        | undefined;
+      if (row === undefined)
+        throw new StorageNotFoundError('Committed leaf not found');
+      return {
+        source: this.#rangeSource(
+          sessionId,
+          row.start_ordinal,
+          row.end_ordinal,
+        ),
+        priorLeafId: row.prior_leaf_id,
+        triggerPositionId: row.trigger_position_id,
+      };
+    })();
+  }
+
+  /** Replace the current summary, including edits made during regeneration. */
+  regenerateLeaf(input: {
+    sessionId: string;
+    leafId: string;
+    summary: string;
+    summaryOutcome: CommittedLeaf['summaryOutcome'];
+    now: string;
+  }): void {
+    this.#database.transaction(() => {
+      const result = this.statements(
+        `UPDATE leaves
+         SET summary = ?, summary_outcome = ?, committed_at = ?
+         WHERE id = ? AND session_id = ? AND state = 'committed'`,
+      ).run(
+        input.summary,
+        input.summaryOutcome,
+        input.now,
+        input.leafId,
+        input.sessionId,
+      );
+      if (result.changes === 0)
+        throw new StorageNotFoundError('Committed leaf not found');
+      publishLeaf(this.statements, input.leafId);
+      this.#touch(input.sessionId, input.now);
+    })();
+  }
+
+  /** Summary-call input for selected canonical content in an ordinal range. */
+  #rangeSource(
+    sessionId: string,
+    startOrdinal: number,
+    endOrdinal: number,
+  ): string {
+    return this.#positions(
+      sessionId,
+      {
+        where: 'p.ordinal BETWEEN ? AND ?',
+        parameters: [startOrdinal, endOrdinal],
+      },
+      false,
+    )
+      .map((position) => {
+        if (position.role === 'user') {
+          const images = position.attachments
+            .map((attachment) => `[Image attachment: ${attachment.filename}]`)
+            .join('\n');
+          return `User:\n${position.source}${images.length === 0 ? '' : `\n${images}`}`;
+        }
+        return position.variant.source.trim() === ''
+          ? ''
+          : `Assistant:\n${position.variant.source}`;
+      })
+      .filter(Boolean)
+      .join('\n\n');
   }
 
   /** One prior summary, for continuity anchoring. */
@@ -1615,9 +1676,7 @@ export class Storage {
       ).run(input.summary, input.leafId, input.sessionId);
       if (result.changes === 0)
         throw new StorageNotFoundError('Committed leaf not found');
-      this.statements(
-        `UPDATE search_documents SET source = ? WHERE handle = ?`,
-      ).run(input.summary, `leaf:${input.leafId}`);
+      publishLeaf(this.statements, input.leafId);
       this.#touch(input.sessionId, input.now);
     })();
   }

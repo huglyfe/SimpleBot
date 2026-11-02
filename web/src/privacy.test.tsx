@@ -87,3 +87,26 @@ test('removing a PIN while backgrounding cannot leave an un-unlockable screen', 
   ).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Set privacy PIN' })).toBeVisible();
 });
+
+test.each(['123', '123456789012345678901', '12a4', '１２３４'])(
+  'rejects invalid PIN %s without saving',
+  async (pin) => {
+    const user = userEvent.setup();
+    render(
+      <PrivacyGate>
+        <PrivacySettings />
+      </PrivacyGate>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Set privacy PIN' }));
+    for (const label of ['New PIN', 'Repeat new PIN']) {
+      fireEvent.change(screen.getByLabelText(label, { exact: true }), {
+        target: { value: pin },
+      });
+    }
+    await user.click(screen.getByRole('button', { name: 'Save privacy PIN' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Use 4–20 digits.',
+    );
+    expect(localStorage.getItem('simplebot:privacy-pin')).toBeNull();
+  },
+);

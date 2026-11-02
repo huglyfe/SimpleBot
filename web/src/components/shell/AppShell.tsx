@@ -103,6 +103,9 @@ export function AppShell({
   );
 
   const bot = data.bots.find((item) => item.slug === activeBotSlug);
+  const presetSlug = data.sessions.find(
+    (session) => session.id === activeSessionId,
+  )?.presetSlug;
 
   return (
     <div className="shell-root">
@@ -129,6 +132,7 @@ export function AppShell({
       <div className="shell-main">
         <ConversationHeader
           bot={bot}
+          presetSlug={presetSlug}
           conversationActive={activeSessionId !== null}
           drawerOpen={drawerOpen}
           onToggleDrawer={toggleDrawer}

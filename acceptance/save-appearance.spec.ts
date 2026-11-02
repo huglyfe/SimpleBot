@@ -73,10 +73,6 @@ for (const surface of ['Bot', 'Preset']) {
       await panel.getByRole('button', { name: 'Save', exact: true }).click();
       await expect(fields).toHaveAttribute('inert', '');
       expect(await appearance()).toEqual(before);
-      if (!fail)
-        await page.screenshot({
-          path: testInfo.outputPath('pending-save.png'),
-        });
       await name.evaluate((element) => element.focus());
       await expect(
         panel.getByRole('button', { name: 'Close panel', exact: true }),

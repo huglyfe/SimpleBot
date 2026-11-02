@@ -30,9 +30,14 @@ export function registerSessionRoutes(
       known.add(botSlug);
       bots.push({ slug: botSlug, name: botSlug, avatarUrl: null });
     }
+    const { value: config } = await ctx.authored.readConfig();
     return {
       version: VERSION,
-      ttsConfigured: (await ctx.authored.readConfig()).value.tts !== null,
+      ttsConfigured: config.tts !== null,
+      time: {
+        timezone: config.application.timezone,
+        clockFormat: config.application.clockFormat,
+      },
       bots,
       sessions,
     };

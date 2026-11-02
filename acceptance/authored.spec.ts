@@ -36,7 +36,7 @@ test('two editors refuse a stale save without losing the draft, then reload and 
   page,
   context,
   presetPath,
-}, testInfo) => {
+}) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
@@ -72,7 +72,6 @@ test('two editors refuse a stale save without losing the draft, then reload and 
       ).value.persona.name,
     ).toBe('External saved persona');
     await panel.getByRole('alert').scrollIntoViewIfNeeded();
-    await page.screenshot({ path: testInfo.outputPath('stale-save.png') });
     await panel.getByRole('button', { name: 'Reload latest' }).click();
     await expect(name).toHaveValue('External saved persona');
     await name.fill('Saved after reload');

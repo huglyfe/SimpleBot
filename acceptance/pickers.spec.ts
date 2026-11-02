@@ -92,7 +92,9 @@ test('searchable pickers preserve draft boundaries and persist conversation sele
       name: 'Main model',
       exact: true,
     });
-    expect((await trigger.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    expect((await trigger.boundingBox())?.height).toBeGreaterThanOrEqual(
+      width <= 800 ? 44 : 32,
+    );
     await trigger.click();
     await trigger.focus();
     await trigger.press('Escape');
@@ -123,10 +125,6 @@ test('searchable pickers preserve draft boundaries and persist conversation sele
     expect(box?.x).toBeGreaterThanOrEqual(0);
     if (!box) throw new Error('Picker has no bounds');
     expect(box.x + box.width).toBeLessThanOrEqual(width);
-    await page.screenshot({
-      path: `/tmp/simplebot-picker-${String(width)}.png`,
-      animations: 'disabled',
-    });
     await picker.getByRole('button', { name: 'Clear search' }).click();
     await expect(search).toHaveValue('');
     await search.press('Escape');
@@ -210,9 +208,6 @@ for (const width of [1280, 390, 320]) {
       if (width < 800) await expect(search).not.toBeFocused();
       else await expect(search).toBeFocused();
       await search.fill(timezone);
-      await page.screenshot({
-        path: `/tmp/simplebot-polish-timezone-${String(width)}.png`,
-      });
       await picker.getByRole('button', { name: new RegExp(timezone) }).click();
       await expect(trigger).toBeFocused();
       expect(

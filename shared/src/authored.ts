@@ -1,6 +1,7 @@
 /** Authored JSON shapes shared by file validation and settings clients. */
 import { z } from 'zod';
 import { authoredDocumentSchema, REASONING_LEVELS } from './contracts.js';
+import { clockFormatSchema } from './time.js';
 import { slug } from './slug.js';
 export { slug } from './slug.js';
 
@@ -96,6 +97,7 @@ export const appConfigSchema = z
   .strictObject({
     application: z.strictObject({
       timezone: z.string().min(1).default('UTC'),
+      clockFormat: clockFormatSchema.default('24'),
       maxMessageChars: z.number().int().positive().default(8_000),
       maxModelCallsPerTurn: z.number().int().positive().default(5),
       modelCallTimeoutMs: z.number().int().positive().default(120_000),

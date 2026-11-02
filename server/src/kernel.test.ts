@@ -143,7 +143,7 @@ test('message cost distinguishes missing, partial, and reported zero usage', asy
   }
 });
 
-test('Context and compaction eligibility read boundaries without loading long transcript traces', async (context) => {
+test('Context, compaction, and regeneration omit long transcript inspection data', async (context) => {
   const { storage } = await fixture(context);
   const sessionId = createSession(storage);
   const canCompact = (tail: number) =>
@@ -189,7 +189,7 @@ test('Context and compaction eligibility read boundaries without loading long tr
     statements.some((sql) => /trace_json|FROM attachments/u.test(sql)),
     false,
   );
-  spy.mock.restore();
+  statements.length = 0;
 
   const leaf = storage.createPendingLeaf({
     sessionId,
@@ -203,6 +203,17 @@ test('Context and compaction eligibility read boundaries without loading long tr
   assert.ok(!leaf.source.includes('Turn 190'));
   assert.equal(canCompact(10), false);
   storage.commitLeaf(leaf.id, 'Earlier conversation', 'model', now);
+  assert.equal(
+    storage.leafRegenerationInput(sessionId, leaf.id).source,
+    leaf.source,
+  );
+  assert.equal(
+    statements.some((sql) =>
+      /trace_json|FROM effects|variant_count/u.test(sql),
+    ),
+    false,
+  );
+  spy.mock.restore();
   assert.equal(canCompact(10), false);
   // A pre-fix leaf could name the latest response as its trigger. Its range,
   // not that legacy provenance, must decide what remains compactable.

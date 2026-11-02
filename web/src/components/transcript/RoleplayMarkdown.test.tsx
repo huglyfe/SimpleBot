@@ -24,68 +24,6 @@ describe('RoleplayMarkdown', () => {
     expect(markup).not.toContain('<img');
   });
 
-  it('highlights all six recognized dialogue quote styles', () => {
-    const quotes = [
-      '"straight"',
-      '“curly”',
-      '«guillemets»',
-      '「corner」',
-      '『white corner』',
-      '＂fullwidth＂',
-    ];
-    const markup = render(quotes.join(' '));
-
-    expect(markup.match(/class="msg-dialogue"/gu)).toHaveLength(6);
-    expect(markup).toContain('&quot;straight&quot;');
-    for (const quote of quotes.slice(1)) expect(markup).toContain(quote);
-  });
-
-  it('does not highlight dialogue-like quotes inside inline or fenced code', () => {
-    const markup = render(
-      '`"inline"` and “dialogue”\n\n```txt\n「fenced」\n```\n',
-    );
-
-    expect(markup.match(/class="msg-dialogue"/gu)).toHaveLength(1);
-    expect(markup).toContain('<code>&quot;inline&quot;</code>');
-    expect(markup).toContain('「fenced」');
-  });
-
-  it('keeps inline code outside a surrounding dialogue treatment', () => {
-    const markup = render('“before `"code"` after”');
-
-    expect(markup).toContain('<code>&quot;code&quot;</code>');
-    expect(markup).not.toMatch(/msg-dialogue[^>]*><code>/u);
-  });
-
-  it('preserves Markdown formatting and links inside a dialogue range', () => {
-    const markup = render(
-      '“hello **there**, *friend* — visit [home](https://example.com)”',
-    );
-
-    expect(markup.match(/class="msg-dialogue"/gu)).toHaveLength(1);
-    expect(markup).toContain('<strong>there</strong>');
-    expect(markup).toContain('<em>friend</em>');
-    expect(markup).toContain('<a href="https://example.com"');
-  });
-
-  it('highlights multiline dialogue but leaves incomplete quotes ordinary', () => {
-    const multiline = render('"first line\nsecond line"');
-    const incomplete = render('“unfinished **thought**');
-
-    expect(multiline.match(/class="msg-dialogue"/gu)).toHaveLength(1);
-    expect(multiline).toContain('first line\nsecond line');
-    expect(incomplete).not.toContain('class="msg-dialogue"');
-    expect(incomplete).toContain('<strong>thought</strong>');
-  });
-
-  it('keeps escaped Markdown literal while highlighting its dialogue', () => {
-    const markup = render('“keep \\*these asterisks\\* visible”');
-
-    expect(markup.match(/class="msg-dialogue"/gu)).toHaveLength(1);
-    expect(markup).toContain('*these asterisks*');
-    expect(markup).not.toContain('<em>');
-  });
-
   it('does not load Markdown image URLs', () => {
     const markup = render('![portrait](https://example.invalid/private.png)');
 

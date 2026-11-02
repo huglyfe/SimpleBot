@@ -46,22 +46,6 @@ export function sessionDisplayTitleSql(session: string): string {
           ), 1, ${String(SESSION_TITLE_CHARACTERS)})`;
 }
 
-/**
- * A leaf carries its frozen `source` — the exact transcript of everything it
- * covers — so reads that do not need to summarise deliberately leave it
- * behind. Carrying it would reintroduce the whole history one indirection
- * away. `createPendingLeaf()` returns it directly to the summarizer.
- */
-export type StoredLeaf = Omit<
-  CommittedLeaf,
-  'state' | 'summary' | 'summaryOutcome'
-> & {
-  state: 'pending';
-  summary: null;
-  priorLeafId: string | null;
-  source: string;
-};
-
 export type StoredAttachment = z.infer<typeof attachmentSchema>;
 
 export type StoredSchedule = ScheduleWrite & {

@@ -31,6 +31,8 @@ for (const width of [1280, 390]) {
       .getByLabel('Title', { exact: true })
       .fill('Submit application');
     await editor.getByLabel('Due date').fill('2026-10-23');
+    await expect(editor.getByLabel('Due time')).toHaveValue('00:00');
+    await editor.getByLabel('Due time').fill('15:45');
     await editor
       .getByLabel('Note', { exact: true })
       .fill('Reward: dinner. Price: chores.');
@@ -59,7 +61,7 @@ for (const width of [1280, 390]) {
     const first = (await read())[0];
     expect(first).toMatchObject({
       title: 'Submit application',
-      dueDate: '2026-10-23',
+      due: '2026-10-23T15:45',
       note: 'Reward: dinner. Price: chores.',
     });
     await page.reload();
@@ -76,7 +78,9 @@ for (const width of [1280, 390]) {
       name: 'Edit to-do Submit application',
       exact: true,
     });
+    await expect(edit.getByLabel('Due time')).toHaveValue('15:45');
     await edit.getByLabel('Due date').fill('');
+    await expect(edit.getByLabel('Due time')).toHaveCount(0);
     await edit.getByLabel('Title', { exact: true }).fill('Send application');
     await edit.getByRole('button', { name: 'Save to-do' }).click();
     await expect(
@@ -86,7 +90,7 @@ for (const width of [1280, 390]) {
       }),
     ).toBeFocused();
     expect(await read()).toEqual([
-      { ...first, title: 'Send application', dueDate: null },
+      { ...first, title: 'Send application', due: null },
     ]);
     expect(
       await page.evaluate(

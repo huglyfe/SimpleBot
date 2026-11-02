@@ -51,7 +51,7 @@ export function createPromptExpander(input: {
         : input.todos
             .map(
               (todo) =>
-                `${todo.id} — ${todo.title}\n${formatTodoDue(todo.dueDate, input.timezone, input.now)}${todo.note === '' ? '' : `\n${todo.note}`}`,
+                `${todo.id} — ${todo.title}\n${formatTodoDue(todo.due, input.timezone, input.now)}${todo.note === '' ? '' : `\n${todo.note}`}`,
             )
             .join('\n\n'),
     listvars: Object.entries(input.variables)

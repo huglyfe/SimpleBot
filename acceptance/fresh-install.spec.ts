@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { AuthoredFiles } from '../server/src/authored.js';
 import { initializeRoot, SCHEMA, WEB } from '../server/src/root.js';
 import { createRuntime } from '../server/src/runtime.js';
@@ -92,9 +92,6 @@ for (const width of [1280, 390]) {
         await readFile(join(root, 'bots/first-bot/first-bot.json'), 'utf8'),
       ).toBe(saved);
       expect(errors).toEqual([]);
-      await page.screenshot({
-        path: resolve(`/tmp/simplebot-first-bot-${String(width)}.png`),
-      });
     } finally {
       await runtime.close();
       await rm(root, { recursive: true, force: true });

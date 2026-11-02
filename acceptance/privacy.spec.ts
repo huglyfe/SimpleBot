@@ -7,7 +7,7 @@ async function settings(page: Page) {
   await page.getByRole('button', { name: 'Application settings' }).click();
 }
 
-async function setPin(page: Page) {
+async function setPin(page: Page, pin = '123456') {
   await settings(page);
   const login = page.locator('section').filter({
     has: page.getByRole('heading', { name: 'Login management', exact: true }),
@@ -15,8 +15,8 @@ async function setPin(page: Page) {
   await login
     .getByRole('button', { name: 'Set privacy PIN', exact: true })
     .click();
-  await page.getByLabel('New PIN', { exact: true }).fill('123456');
-  await page.getByLabel('Repeat new PIN').fill('123456');
+  await page.getByLabel('New PIN', { exact: true }).fill(pin);
+  await page.getByLabel('Repeat new PIN').fill(pin);
   await page.getByRole('button', { name: 'Save privacy PIN' }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 }
@@ -52,9 +52,7 @@ test('privacy lock preserves drafts, covers panels, checks PIN changes and survi
   const message = page.getByRole('textbox', { name: 'Message', exact: true });
   await message.fill('Private unsent draft');
   await setPin(page);
-  await page.screenshot({ path: '/tmp/simplebot-login-management-phone.png' });
   await page.getByRole('button', { name: 'Lock now' }).click();
-  await page.screenshot({ path: '/tmp/simplebot-lock-phone.png' });
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   await expect(
     page.getByRole('dialog', { name: 'SimpleBot is locked' }),
@@ -66,7 +64,6 @@ test('privacy lock preserves drafts, covers panels, checks PIN changes and survi
   await expect(page.getByLabel('Privacy PIN', { exact: true })).toBeFocused();
   await unlock(page, '000000', false);
   await expect(page.getByRole('alert')).toHaveText('Incorrect PIN.');
-  await page.screenshot({ path: '/tmp/simplebot-privacy-phone.png' });
   expect((await page.request.get(`${url}/api/bootstrap`)).status()).toBe(200);
   await unlock(page);
   await page.getByRole('button', { name: 'Close panel' }).click();
@@ -113,8 +110,10 @@ test('privacy lock preserves drafts, covers panels, checks PIN changes and survi
   await settings(page);
   await page.getByRole('button', { name: 'Change privacy PIN' }).click();
   await page.getByLabel('Current PIN').fill('000000');
-  await page.getByLabel('New PIN', { exact: true }).fill('654321');
-  await page.getByLabel('Repeat new PIN').fill('654321');
+  await page
+    .getByLabel('New PIN', { exact: true })
+    .fill('01234567890123456789');
+  await page.getByLabel('Repeat new PIN').fill('01234567890123456789');
   await page.getByRole('button', { name: 'Save privacy PIN' }).click();
   await expect(page.getByRole('alertdialog').getByRole('alert')).toHaveText(
     'Incorrect current PIN.',
@@ -125,14 +124,13 @@ test('privacy lock preserves drafts, covers panels, checks PIN changes and survi
   await page.reload();
   await expect(page.locator('.msg-row')).toHaveCount(0);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.screenshot({ path: '/tmp/simplebot-privacy-desktop.png' });
-  await unlock(page, '654321');
+  await unlock(page, '01234567890123456789');
   await expect(message).toBeVisible();
   await settings(page);
   await page
     .getByRole('button', { name: 'Remove privacy PIN', exact: true })
     .click();
-  await page.getByLabel('Current PIN').fill('654321');
+  await page.getByLabel('Current PIN').fill('01234567890123456789');
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Remove privacy PIN' })
@@ -228,4 +226,14 @@ test('background read failures wait behind the privacy lock', async ({
   await page.unroute('**/api/bootstrap');
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
+});
+
+test('four-digit PIN preserves leading zeroes and unlocks after reload', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await setPin(page, '0123');
+  await page.reload();
+  await unlock(page, '0123');
+  await expect(page.locator('.shell-root')).toBeVisible();
 });

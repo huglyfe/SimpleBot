@@ -4,6 +4,7 @@ import { userEvent } from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SessionContext } from '@simplebot/shared';
 
+import { TimePreferences } from '../../lib/format.js';
 import { ConversationSheet } from './ConversationSheet.js';
 
 const api = vi.hoisted(() => ({
@@ -15,6 +16,7 @@ const api = vi.hoisted(() => ({
   editLeafSource: vi.fn(),
   getContext: vi.fn(),
   putSchedule: vi.fn(),
+  regenerateLeaf: vi.fn(),
   setVariable: vi.fn(),
 }));
 
@@ -78,7 +80,11 @@ function renderSheet() {
   });
   render(
     <QueryClientProvider client={client}>
-      <ConversationSheet sessionId={SESSION_ID} />
+      <TimePreferences
+        value={{ timezone: context.timezone, clockFormat: '24' }}
+      >
+        <ConversationSheet sessionId={SESSION_ID} />
+      </TimePreferences>
     </QueryClientProvider>,
   );
   return { client };
@@ -304,6 +310,68 @@ describe('ConversationSheet', () => {
     },
   );
 
+  it('locks summary editing during regeneration and unlocks after success or failure', async () => {
+    const leaf: SessionContext['leaves'][number] = {
+      id: LEAF_ID,
+      triggerPositionId: POSITION_ID,
+      startOrdinal: 0,
+      endOrdinal: 1,
+      startExchange: 1,
+      endExchange: 1,
+      createdAt: '2026-08-23T12:02:00.000Z',
+      state: 'committed',
+      summary: '[Summary unavailable. Retrieve details if needed.]',
+      summaryOutcome: 'fallback-unavailable',
+    };
+    const regenerated = {
+      ...context,
+      leaves: [{ ...leaf, summary: 'Fresh events.', summaryOutcome: 'model' }],
+    } satisfies SessionContext;
+    api.getContext
+      .mockResolvedValueOnce({ ...context, leaves: [leaf] })
+      .mockResolvedValue(regenerated);
+    const call = Promise.withResolvers<undefined>();
+    const failedCall = Promise.withResolvers<undefined>();
+    api.regenerateLeaf
+      .mockReturnValueOnce(call.promise)
+      .mockReturnValueOnce(failedCall.promise);
+    renderSheet();
+    const regenerate = await screen.findByRole('button', {
+      name: 'Regenerate summary · Exchange 1',
+    });
+    const edit = screen.getByRole('button', {
+      name: 'Edit summary · Exchange 1',
+    });
+
+    await userEvent.click(regenerate);
+    expect(api.regenerateLeaf).toHaveBeenCalledWith(SESSION_ID, LEAF_ID);
+    expect(regenerate).toBeDisabled();
+    expect(edit).toBeDisabled();
+    await userEvent.click(edit);
+    expect(screen.queryByRole('textbox', { name: 'Summary' })).toBeNull();
+    call.resolve(undefined);
+    expect(await screen.findByText('Fresh events.')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Fallback summary — model unavailable'),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(regenerate).toBeEnabled());
+    expect(edit).toBeEnabled();
+
+    await userEvent.click(regenerate);
+    expect(edit).toBeDisabled();
+    failedCall.reject(new Error('provider unavailable'));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'provider unavailable',
+    );
+    expect(screen.getByText('Fresh events.')).toBeInTheDocument();
+    expect(regenerate).toBeEnabled();
+    expect(edit).toBeEnabled();
+    await userEvent.click(edit);
+    expect(screen.getByRole('textbox', { name: 'Summary' })).toHaveValue(
+      'Fresh events.',
+    );
+  });
+
   it('shows stored schedules and their next run', async () => {
     renderSheet();
 
@@ -311,7 +379,7 @@ describe('ConversationSheet', () => {
       await screen.findByText(/0 9 \* \* \* · enabled/),
     ).toBeInTheDocument();
     expect(screen.getByText('Say good morning.')).toBeInTheDocument();
-    expect(screen.getByText(/Next run .*9:00:00 AM EDT/u)).toBeInTheDocument();
+    expect(screen.getByText(/Next run .*09:00/u)).toBeInTheDocument();
   });
 
   it('replaces Context after a direct variable write', async () => {
