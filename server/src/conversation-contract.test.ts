@@ -15,7 +15,8 @@ import { randomUUID } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { AuthoredFiles, AuthoredValidationError } from './authored.js';
+import { AuthoredFiles } from './authored.js';
+import { AuthoredValidationError } from './authored-schemas.js';
 import { GREETING_MODEL, GREETING_PROVIDER } from './storage.js';
 import {
   disposeTestFixture,

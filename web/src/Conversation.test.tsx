@@ -287,8 +287,11 @@ describe('Conversation', () => {
       expect(screen.getByText('canonical answer')).toBeInTheDocument();
     });
     expect(screen.getByText('hello')).toBeInTheDocument();
-    expect(invalidate).toHaveBeenCalledExactlyOnceWith({
-      queryKey: ['bootstrap'],
+    // The drawer's recency and the header's context ring both follow a reply.
+    expect(invalidate).toHaveBeenCalledTimes(2);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['bootstrap'] });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['context', sessionId],
     });
   });
 
@@ -354,6 +357,32 @@ describe('Conversation', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('request refused');
     });
     expect(screen.getByLabelText('Message')).toHaveValue('keep this');
+  });
+
+  it('refreshes Context when a read reveals a response finished elsewhere', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    const generating = assistant('');
+    const sessionId = await renderConversation(
+      [userPosition('hello'), generating],
+      client,
+    );
+    expect(invalidate).not.toHaveBeenCalled();
+
+    const finished = assistant('Finished after reload.');
+    finished.variant.usage = [null];
+    api.getSession.mockResolvedValue(
+      projection([userPosition('hello'), finished], sessionId),
+    );
+    await client.refetchQueries({ queryKey: ['session', sessionId] });
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: ['context', sessionId],
+      }),
+    );
   });
 
   it('refreshes a detached response without automatically accepting its effects', async () => {

@@ -42,7 +42,6 @@ import {
   nextCronRun,
   parseScheduleEffect,
   placeholders,
-  required,
   sessionDisplayTitleSql,
   type AttachmentRow,
   type EffectRow,
@@ -173,9 +172,8 @@ export async function openStorage(
       database.transaction(() => {
         const interrupted = database
           .prepare(
-            `SELECT p.id FROM message_positions p
-         JOIN message_variants v ON v.id = p.selected_variant_id
-         WHERE v.source = '' AND v.provider <> 'authored'`,
+            `SELECT DISTINCT position_id AS id FROM message_variants
+         WHERE source = '' AND provider <> 'authored'`,
           )
           .all() as { id: string }[];
         const pendingLeaves = database
@@ -1535,50 +1533,32 @@ export class Storage {
     variables: SessionContext['variables'],
     schedules: SessionContext['schedules'],
   ): ContextEvidence {
+    // Exchange numbers are arithmetic, so Context costs the same at any
+    // transcript length. `createSession` writes an optional assistant greeting
+    // at ordinal 0 and `#openTurn` appends user/assistant pairs at the next
+    // ordinal; nothing deletes or renumbers a position. Assistant positions
+    // therefore occupy every other ordinal: even after a greeting, odd without.
+    const shape = this.statements(
+      `SELECT MAX(ordinal) AS last,
+              EXISTS (
+                SELECT 1 FROM message_positions
+                WHERE session_id = ? AND ordinal = 0 AND role = 'assistant'
+              ) AS greeted
+       FROM message_positions WHERE session_id = ?`,
+    ).get(sessionId, sessionId) as { last: number | null; greeted: 0 | 1 };
+    /** Assistant positions whose ordinal is below `ordinal`. */
+    const answersBefore = (ordinal: number) =>
+      Math.floor((ordinal + shape.greeted) / 2);
     const leaves = this.#contextLeaves(sessionId, activeLeafCap).map(
       (leaf) => ({
         ...leaf,
-        startExchange: 0,
-        endExchange: 0,
+        startExchange: answersBefore(leaf.startOrdinal) + 1,
+        endExchange: answersBefore(leaf.endOrdinal + 1),
       }),
     );
-    const exactFromOrdinal = (leaves.at(-1)?.endOrdinal ?? -1) + 1;
-    let currentExchange = 0;
-    let exactFromExchange = 1;
-    // One scan for the usual bounded leaf set. Batches keep arbitrary authored
-    // caps within SQLite's column/parameter limits without storing counters.
-    for (let offset = 0; offset < Math.max(1, leaves.length); offset += 100) {
-      const batch = leaves.slice(offset, offset + 100);
-      const counts = this.statements(
-        `SELECT COUNT(*) AS total,
-        COUNT(CASE WHEN ordinal < ? THEN 1 END) + 1 AS exact
-        ${batch
-          .map(
-            (_, index) => `,
-          COUNT(CASE WHEN ordinal < ? THEN 1 END) + 1 AS start${String(index)},
-          COUNT(CASE WHEN ordinal <= ? THEN 1 END) AS end${String(index)}`,
-          )
-          .join('')}
-        FROM message_positions WHERE session_id = ? AND role = 'assistant'
-      `,
-      ).get(
-        exactFromOrdinal,
-        ...batch.flatMap((leaf) => [leaf.startOrdinal, leaf.endOrdinal]),
-        sessionId,
-      ) as { total: number; exact: number } & Record<string, number>;
-      currentExchange = counts.total;
-      exactFromExchange = counts.exact;
-      for (const [index, leaf] of batch.entries()) {
-        leaf.startExchange = required(
-          counts[`start${String(index)}`] ?? null,
-          'start exchange',
-        );
-        leaf.endExchange = required(
-          counts[`end${String(index)}`] ?? null,
-          'end exchange',
-        );
-      }
-    }
+    const exactFromExchange =
+      answersBefore((leaves.at(-1)?.endOrdinal ?? -1) + 1) + 1;
+    const currentExchange = answersBefore((shape.last ?? -1) + 1);
     const latest = this.statements(
       `SELECT v.usage_json
        FROM message_positions p

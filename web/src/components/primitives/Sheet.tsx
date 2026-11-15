@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -58,6 +59,9 @@ export function Sheet({
 }: SheetProps) {
   const [actionHost, setActionHost] = useState<HTMLDivElement | null>(null);
   const owner = useRef<SheetEditor | null>(null);
+  const [busy, setBusy] = useState(false);
+  const registration = useMemo(() => ({ owner, setBusy }), []);
+  const canDismiss = dismissible && !busy;
   const [discarding, setDiscarding] = useState(false);
   const close = () => {
     const state = owner.current;
@@ -69,9 +73,17 @@ export function Sheet({
   const dialog = useDialog({
     onDismiss: close,
     returnFocus,
-    dismissible,
+    dismissible: canDismiss,
     initialFocus: () => closeRef.current,
   });
+
+  useLayoutEffect(() => {
+    const panel = dialog.ref.current;
+    if (!panel) return;
+    if (!canDismiss) panel.focus({ preventScroll: true });
+    else if (document.activeElement === panel)
+      closeRef.current?.focus({ preventScroll: true });
+  }, [canDismiss, dialog.ref]);
 
   const style = placement === 'side' ? { width } : undefined;
 
@@ -79,6 +91,7 @@ export function Sheet({
     <>
       <dialog
         {...dialog}
+        tabIndex={-1}
         className={`ui-sheet is-${placement}`}
         role="dialog"
         aria-modal="true"
@@ -96,7 +109,7 @@ export function Sheet({
             }
             onClick={close}
             ref={closeRef}
-            disabled={!dismissible}
+            disabled={!canDismiss}
           >
             {DISMISS[placement].icon}
           </IconButton>
@@ -106,7 +119,7 @@ export function Sheet({
           <div className="ui-sheet-actions" ref={setActionHost} />
         </header>
         <SheetActionHost value={actionHost}>
-          <SheetOwner value={owner}>
+          <SheetOwner value={registration}>
             <div className="ui-sheet-body ui-scrollbar">{children}</div>
           </SheetOwner>
         </SheetActionHost>
@@ -137,12 +150,14 @@ export interface SheetEditor {
   dirty: boolean;
   save: () => Promise<void>;
 }
-const SheetOwner = createContext<React.RefObject<SheetEditor | null> | null>(
-  null,
-);
-/** The sheet consults its current editor only when the operator tries to leave. */
+const SheetOwner = createContext<{
+  owner: React.RefObject<SheetEditor | null>;
+  setBusy: (busy: boolean) => void;
+} | null>(null);
+/** Publish busy state for controls; read the current draft only on dismissal. */
 export function useSheetEditor(state: SheetEditor): void {
-  const owner = useContext(SheetOwner);
+  const registration = useContext(SheetOwner);
+  const owner = registration?.owner;
   useLayoutEffect(() => {
     if (!owner) return;
     owner.current = state;
@@ -150,4 +165,8 @@ export function useSheetEditor(state: SheetEditor): void {
       owner.current = null;
     };
   }, [owner, state]);
+  useLayoutEffect(() => {
+    registration?.setBusy(state.busy);
+    return () => registration?.setBusy(false);
+  }, [registration, state.busy]);
 }

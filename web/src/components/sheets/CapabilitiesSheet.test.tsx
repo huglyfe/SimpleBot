@@ -28,7 +28,6 @@ const {
 
 vi.mock('../../api.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../api.js')>()),
-  getSecrets: async () => ({ names: [], revision: 'empty' }),
   getCapabilities,
   getDependencies,
   saveDependencies,

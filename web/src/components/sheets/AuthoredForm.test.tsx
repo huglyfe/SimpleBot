@@ -87,11 +87,13 @@ it('holds a pending write, retains a failed draft, and discards to the saved sna
   await user.dblClick(screen.getByRole('button', { name: 'Save' }));
   expect(save).toHaveBeenCalledTimes(1);
   expect(name.closest('fieldset')).toHaveAttribute('inert');
+  expect(screen.getByRole('button', { name: 'Close panel' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Discard' })).toBeDisabled();
   await act(async () => pending.reject(new Error('Disk unavailable')));
   expect(screen.getByRole('alert')).toHaveTextContent('Disk unavailable');
   expect(name).toHaveValue('Original edited');
   expect(name.closest('fieldset')).not.toHaveAttribute('inert');
+  expect(screen.getByRole('button', { name: 'Close panel' })).toBeEnabled();
   expect(save).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole('button', { name: 'Discard' }));
   expect(name).toHaveValue('Original');

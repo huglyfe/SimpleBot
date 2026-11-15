@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import {
-  mkdtemp,
   readFile,
   readdir,
   writeFile,
@@ -22,12 +21,16 @@ import { AuthoredFiles } from './authored.js';
 import { runCli, type CliIO } from './cli.js';
 import { defaultRoot, initializeRoot, resolveRoot } from './root.js';
 import { SCHEMA_VERSION } from './database.js';
-import { createTestFixture, seedExchange } from './test-helper.js';
+import {
+  createTestFixture,
+  disposableDirectory,
+  seedExchange,
+} from './test-helper.js';
 
 const DEFAULTS = resolve(import.meta.dirname, '../defaults');
 
-async function disposableRoot(): Promise<string> {
-  return mkdtemp(join(tmpdir(), 'simplebot-cli-'));
+function disposableRoot(): Promise<string> {
+  return disposableDirectory('cli');
 }
 
 function recorder(answer = ''): CliIO & { lines: string[]; errors: string[] } {

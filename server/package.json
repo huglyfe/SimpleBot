@@ -1,6 +1,6 @@
 {
   "name": "@simplebot/server",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,17 +10,17 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "1.4.0",
-    "@fastify/static": "10.1.8",
+    "@earendil-works/pi-ai": "1.5.2",
+    "@fastify/static": "10.1.10",
     "@modelcontextprotocol/client": "2.4.0",
     "@modelcontextprotocol/server": "2.4.0",
     "@simplebot/shared": "workspace:*",
-    "better-sqlite3": "13.0.3",
+    "better-sqlite3": "13.1.1",
     "croner": "11.0.0",
-    "fastify": "5.12.7",
+    "fastify": "5.12.8",
     "fs-native-extensions": "1.5.3",
-    "re2js": "2.9.1",
-    "typebox": "1.4.3",
+    "re2js": "2.10.0",
+    "typebox": "1.4.6",
     "yaml": "2.9.1",
     "zod": "4.6.7"
   },

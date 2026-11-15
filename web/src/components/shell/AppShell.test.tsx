@@ -10,9 +10,17 @@ import { AppShell, PHONE_QUERY } from './AppShell.js';
 
 vi.mock('../../api.js', () => ({
   searchSessions: vi.fn(),
-  getPresetList: vi.fn(async () => [
-    { slug: 'default', name: 'Evening Story', model: 'claude-opus-5-5' },
-  ]),
+  getContext: vi.fn(async () => ({
+    compactionThresholdTokens: 10_000,
+    lastRequestUsage: {
+      input: 1_000,
+      output: 300,
+      cacheRead: 6_000,
+      cacheWrite: 500,
+      totalTokens: 7_800,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
+  })),
 }));
 
 const data: Bootstrap = {
@@ -346,15 +354,29 @@ describe('AppShell drawer', () => {
     expect(onOpenPreset).toHaveBeenCalledOnce();
   });
 
-  it('names the active bot and its preset in the header identity', async () => {
+  it('names the active bot in the header identity', () => {
     setViewport(false);
     renderShell();
 
-    const header = screen.getByRole('banner');
     expect(
-      await within(header).findByText('Evening Story'),
-    ).toBeInTheDocument();
-    expect(within(header).getByText('Seraphina')).toBeInTheDocument();
+      within(screen.getByRole('banner')).getByRole('button', {
+        name: 'Seraphina',
+      }),
+    ).toHaveTextContent('Seraphina');
+  });
+
+  it('reports prompt tokens against the compaction threshold on the context ring', async () => {
+    setViewport(false);
+    renderShell();
+
+    const controls = screen.getByRole('button', {
+      name: 'Conversation controls',
+    });
+    await waitFor(() =>
+      expect(controls).toHaveAccessibleDescription(
+        'Context 7,500 of 10,000 tokens before compaction',
+      ),
+    );
   });
 
   it('names the global destinations without a Tools surface', () => {

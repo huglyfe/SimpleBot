@@ -4,7 +4,8 @@ declare const BUILD: { revision: string; assets: string[] };
 
 // The build supplies an exact public-asset allowlist. Private requests pass
 // straight through: no runtime caching, offline writes, or background work.
-// Stable cache ownership lets new builds remove the preceding shell.
+// Stable cache ownership lets new builds remove the preceding shell. A new
+// build takes over as soon as it is cached; open pages reload onto it.
 const prefix = 'simplebot-shell-';
 const cacheName = prefix + BUILD.revision;
 const assets = new Set(
@@ -19,7 +20,8 @@ self.addEventListener('install', (event) => {
         cache.addAll(
           BUILD.assets.map((path) => new Request(path, { cache: 'reload' })),
         ),
-      ),
+      )
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -33,10 +35,6 @@ self.addEventListener('activate', (event) => {
       await self.clients.claim();
     })(),
   );
-});
-
-self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  if (event.data === 'activate') event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('fetch', (event) => {

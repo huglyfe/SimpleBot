@@ -6,7 +6,7 @@ import { getProviderList, getProviderModels } from '../../api.js';
 import { SearchPicker } from '../primitives/SearchPicker.js';
 import { Field } from '../primitives/Field.js';
 import { RecordEditor } from './RecordEditor.js';
-import { CredentialField, SecretsSection } from './Secrets.js';
+import { ValueField } from './ValueField.js';
 import { Section } from './Section.js';
 
 export function ProviderSheet({
@@ -139,8 +139,8 @@ export function ProviderSheet({
                     }
                   />
                 </Field>
-                <CredentialField
-                  label="API key reference"
+                <ValueField
+                  label="API key"
                   value={draft.apiKey}
                   onChange={(apiKey) => change({ ...draft, apiKey })}
                 />
@@ -158,7 +158,6 @@ export function ProviderSheet({
           </RecordEditor>
         </ul>
       </Section>
-      <SecretsSection />
     </>
   );
 }
@@ -175,11 +174,14 @@ function ProviderConnection({
   return (
     <fieldset className="provider-connection">
       <legend>{id}</legend>
-      <CredentialField
-        label="API key reference"
+      <ValueField
+        label="API key"
         value={value.apiKey ?? ''}
         onChange={(apiKey) =>
-          onChange({ ...value, apiKey: apiKey || undefined })
+          onChange({
+            ...value,
+            apiKey: apiKey === '' ? undefined : apiKey,
+          })
         }
       />
       <Field label="Base URL" htmlFor={`provider-${id}-url`}>

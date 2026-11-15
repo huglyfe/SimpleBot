@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { after } from 'node:test';
 
 import {
   createModels,
@@ -23,13 +24,29 @@ export interface TestFixture {
 
 let fixtureOrdinal = 0;
 
+const disposable: string[] = [];
+// Each test file runs in its own process; remove every directory it made once
+// its tests (and their own after hooks, which close runtimes) have finished.
+after(() =>
+  Promise.all(
+    disposable.map((path) => rm(path, { recursive: true, force: true })),
+  ),
+);
+
+/** A temporary directory removed when the current test file finishes. */
+export async function disposableDirectory(prefix: string): Promise<string> {
+  const path = await mkdtemp(join(tmpdir(), `simplebot-${prefix}-`));
+  disposable.push(path);
+  return path;
+}
+
 export async function createTestFixture(options?: {
   faux?: FauxProviderHandle;
   clock?: () => Date;
   web?: string;
   loginEnabled?: boolean;
 }): Promise<TestFixture> {
-  const root = await mkdtemp(join(tmpdir(), 'simplebot-test-'));
+  const root = await disposableDirectory('test');
   const faux =
     options?.faux ??
     fauxProvider({ provider: `faux-${String((fixtureOrdinal += 1))}` });

@@ -19,12 +19,9 @@ import type {
   StoredVariant,
 } from '@simplebot/shared';
 
-import type {
-  AuthoredAttempt,
-  AuthoredFiles,
-  Card,
-  Preset,
-} from './authored.js';
+import type { Card, Preset } from '@simplebot/shared';
+import type { AuthoredFiles } from './authored.js';
+import type { AuthoredAttempt } from './authored-schemas.js';
 import {
   type ActivatedCapabilities,
   type SelectedCapabilities,
@@ -480,9 +477,18 @@ function messageText(message: Message | undefined): string {
 /** Optional usage fields are absent rather than explicitly undefined. */
 function storedUsage(usage: StoredVariant['usage'][number] | undefined): Usage {
   if (usage === null || usage === undefined) return zeroUsage();
-  const { cacheWrite1h, reasoning, ...rest } = usage;
+  const {
+    cacheWrite1h,
+    reasoning,
+    cost: { totalFromProvider, ...cost },
+    ...rest
+  } = usage;
   return {
     ...rest,
+    cost: {
+      ...cost,
+      ...(totalFromProvider === undefined ? {} : { totalFromProvider }),
+    },
     ...(cacheWrite1h === undefined ? {} : { cacheWrite1h }),
     ...(reasoning === undefined ? {} : { reasoning }),
   };

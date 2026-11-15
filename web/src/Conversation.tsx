@@ -67,6 +67,28 @@ export function Conversation({
   const [loadingEarlier, setLoadingEarlier] = useState(false);
   const operation = useRef<Operation | null>(null);
 
+  // Context reports the newest selected response's usage. Follow that response
+  // however it arrives (own stream, polling after reload, swipe selection), not
+  // each path that might deliver it.
+  const latest = query.data?.positions.findLast(
+    (position) => position.role === 'assistant',
+  );
+  // undefined until the first read, which the header's own query covers.
+  const usageKey =
+    query.data === undefined
+      ? undefined
+      : latest?.role === 'assistant'
+        ? `${latest.variant.id}:${String(latest.variant.usage.length)}`
+        : null;
+  const seenUsageKey = useRef(usageKey);
+  useEffect(() => {
+    const seen = seenUsageKey.current;
+    if (usageKey === seen) return;
+    seenUsageKey.current = usageKey;
+    if (seen !== undefined)
+      void cache.invalidateQueries({ queryKey: ['context', sessionId] });
+  }, [cache, sessionId, usageKey]);
+
   useEffect(
     () => () => {
       const claimed = operation.current;

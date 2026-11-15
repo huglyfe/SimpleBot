@@ -1,12 +1,5 @@
 import { createModels, InMemoryCredentialStore } from '@earendil-works/pi-ai';
 import { radiusProvider } from '@earendil-works/pi-ai/providers/all';
-import { AuthoredValidationError } from '../authored.js';
-import { SecretStore } from '../secrets.js';
-import {
-  secretNameSchema,
-  secretWriteSchema,
-  secretDeleteSchema,
-} from '@simplebot/shared';
 import { providerConnection } from '../credentials.js';
 /** Root settings, external dependencies, the published catalog, and providers. */
 
@@ -26,29 +19,6 @@ export function registerSettingsRoutes(
   app: FastifyInstance,
   ctx: RouteContext,
 ): void {
-  const secrets = new SecretStore(ctx.authored.root);
-  app.get('/api/secrets', async () => secrets.list());
-  app.put('/api/secrets/:name', async (request) => {
-    const { name } = request.params as { name: string };
-    const body = secretWriteSchema.safeParse(request.body);
-    if (!body.success)
-      throw new AuthoredValidationError('Invalid secret request');
-    return secrets.write(
-      secretNameSchema.parse(name),
-      body.data.value,
-      body.data.expectedRevision,
-    );
-  });
-  app.delete('/api/secrets/:name', async (request) => {
-    const { name } = request.params as { name: string };
-    const body = secretDeleteSchema.parse(request.body);
-    return secrets.write(
-      secretNameSchema.parse(name),
-      null,
-      body.expectedRevision,
-    );
-  });
-
   app.get('/api/settings', async () => {
     const config = await ctx.authored.readConfig();
     const {

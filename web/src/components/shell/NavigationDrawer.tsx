@@ -34,6 +34,7 @@ export interface NavigationDrawerProps {
   onClose: () => void;
   onSelectSession: (id: string) => void;
   onNewConversation: (botSlug: string) => void;
+  creatingConversation?: boolean;
   onRenameSession: (id: string, title: string) => Promise<void>;
   onDeleteSession: (id: string) => void;
   onManageBot: (botSlug: string) => void;
@@ -71,6 +72,7 @@ export function NavigationDrawer({
   onClose,
   onSelectSession,
   onNewConversation,
+  creatingConversation = false,
   onRenameSession,
   onDeleteSession,
   onManageBot,
@@ -240,6 +242,7 @@ export function NavigationDrawer({
                     items={[
                       {
                         label: 'New conversation',
+                        disabled: creatingConversation,
                         onSelect: () => {
                           onNewConversation(bot.slug);
                         },
@@ -262,6 +265,7 @@ export function NavigationDrawer({
                 ) : (
                   <IconButton
                     label={`New conversation with ${bot.name}`}
+                    disabled={creatingConversation}
                     onClick={() => {
                       onNewConversation(bot.slug);
                     }}

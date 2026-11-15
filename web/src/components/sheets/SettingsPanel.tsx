@@ -109,6 +109,9 @@ export function SettingsPanel({
     void cache.invalidateQueries({
       queryKey: path.startsWith('presets/') ? ['presets'] : ['bootstrap'],
     });
+    // A preset's compaction threshold feeds every Context projection using it.
+    if (path.startsWith('presets/'))
+      void cache.invalidateQueries({ queryKey: ['context'] });
     return nextRevision;
   }
 

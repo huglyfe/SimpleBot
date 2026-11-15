@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import {
-  mkdtemp,
   mkdir,
   readFile,
   readdir,
@@ -12,7 +11,6 @@ import {
   chmod,
 } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
@@ -20,10 +18,10 @@ import { bootstrapSchema } from '@simplebot/shared';
 
 import { fauxAssistantMessage } from '@earendil-works/pi-ai';
 
-import { AuthoredConflictError, AuthoredFiles } from './authored.js';
+import { AuthoredFiles } from './authored.js';
+import { AuthoredConflictError } from './authored-schemas.js';
 import { authCookies, clearedAuthCookies, readAuthCookie } from './auth.js';
-import { SecretStore } from './secrets.js';
-import { resolveCredential } from './credentials.js';
+import { resolveValue } from './credentials.js';
 import { SessionCron } from './cron.js';
 import {
   createBackup,
@@ -32,6 +30,7 @@ import {
   verifyBackup,
 } from './operations.js';
 import {
+  disposableDirectory,
   disposeTestFixture,
   createSession,
   createTestFixture,
@@ -197,10 +196,16 @@ test('every schedule follows the current application timezone', async (context) 
 });
 
 test('TTS publishes one deterministic complete file and reuses it', async (context) => {
+  const bodies: Record<string, unknown>[] = [];
   const server = createServer((request, response) => {
     assert.equal(request.headers.authorization, 'Bearer synthetic-speech-key');
-    response.writeHead(200, { 'content-type': 'audio/mpeg' });
-    response.end('audio');
+    let body = '';
+    request.on('data', (part: Buffer) => (body += part.toString()));
+    request.on('end', () => {
+      bodies.push(JSON.parse(body) as Record<string, unknown>);
+      response.writeHead(200, { 'content-type': 'audio/mpeg' });
+      response.end('audio');
+    });
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   context.after(() => server.close());
@@ -210,18 +215,23 @@ test('TTS publishes one deterministic complete file and reuses it', async (conte
   const fixture = await createTestFixture();
   context.after(() => disposeTestFixture(fixture));
   const configPath = join(fixture.root, 'config.json');
+  const authored = new AuthoredFiles(fixture.root);
+  const current = await authored.readConfig();
+  await authored.writeConfig(
+    {
+      ...current.value,
+      tts: {
+        baseUrl: `http://127.0.0.1:${String(addressInfo.port)}/`,
+        apiKey: { value: 'synthetic-speech-key' },
+        model: 'speech',
+      },
+    },
+    current.revision,
+  );
   const config = JSON.parse(await readFile(configPath, 'utf8')) as Record<
     string,
     unknown
   >;
-  const secrets = new SecretStore(fixture.root);
-  secrets.write('SPEECH_KEY', 'synthetic-speech-key', secrets.list().revision);
-  config.tts = {
-    baseUrl: `http://127.0.0.1:${String(addressInfo.port)}/`,
-    apiKey: 'secret:SPEECH_KEY',
-    model: 'speech',
-  };
-  await writeFile(configPath, JSON.stringify(config));
   fixture.faux.setResponses([fauxAssistantMessage('Speak this')]);
   const address = await listen(fixture.runtime);
   const sessionId = await createSession(address);
@@ -248,6 +258,8 @@ test('TTS publishes one deterministic complete file and reuses it', async (conte
   );
   const firstBody = (await first.json()) as { key: string; cached: boolean };
   assert.equal(firstBody.cached, false);
+  // Default speed is omitted: several OpenAI-compatible models reject it.
+  assert.equal(Object.hasOwn(bodies[0] ?? {}, 'speed'), false);
   const second = await fetch(
     `${address}/api/sessions/${sessionId}/variants/${completed.variantId}/speech`,
     { method: 'POST' },
@@ -321,7 +333,7 @@ test('owner pairing is one-use and backups verify before fresh-root restore', as
   auth.setOwnerKey('a-reusable-owner-key');
   assert.ok(auth.exchange('a-reusable-owner-key'));
 
-  const parent = await mkdtemp(join(tmpdir(), 'simplebot-backup-'));
+  const parent = await disposableDirectory('backup');
   const backup = join(parent, 'backup');
   await createBackup(fixture.root, backup, fixture.runtime.storage);
   if (process.platform !== 'win32') {
@@ -355,7 +367,7 @@ test('a backup whose database outran its files fails instead of publishing', asy
     now,
   });
 
-  const parent = await mkdtemp(join(tmpdir(), 'simplebot-backup-race-'));
+  const parent = await disposableDirectory('backup-race');
   const backup = join(parent, 'backup');
   await assert.rejects(
     createBackup(fixture.root, backup, {
@@ -560,23 +572,27 @@ test('settings reject removing a provider used by a preset', async (context) => 
   );
 });
 
-test('credential references share one resolution rule', () => {
-  assert.throws(
-    () => resolveCredential('literal', 'Provider', {}),
-    /must be an environment reference/u,
-  );
+test('saved values share one resolution rule without falling back', () => {
+  assert.equal(resolveValue('plain', 'MCP', '/unused', {}), 'plain');
   assert.equal(
-    resolveCredential('${TOKEN}', 'Provider', { TOKEN: 'secret' }),
+    resolveValue('${TOKEN}', 'Provider', '/unused', { TOKEN: 'secret' }),
     'secret',
   );
   assert.throws(
-    () => resolveCredential('${TOKEN}', 'Provider', {}),
-    /Provider credential reference is unavailable/u,
+    () => resolveValue('${TOKEN}', 'Provider', '/unused', {}),
+    /Provider environment variable TOKEN is unavailable/u,
+  );
+  assert.throws(
+    () =>
+      resolveValue({ private: 'a'.repeat(32) }, 'Provider', '/unused', {
+        TOKEN: 'ambient',
+      }),
+    /Provider private value is not set/u,
   );
 });
 
 test('the built client and compact bootstrap use the server directly', async (context) => {
-  const web = await mkdtemp(join(tmpdir(), 'simplebot-web-'));
+  const web = await disposableDirectory('web');
   await writeFile(
     join(web, 'index.html'),
     '<main id="root">golden client</main>',

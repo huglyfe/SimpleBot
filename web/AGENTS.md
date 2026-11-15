@@ -13,7 +13,7 @@ Read `docs/FRONTEND_REQUIREMENTS.md` and consult backend requirements for affect
 - Bot owns exact tool, Skill, Memory, and terminal selections in its character card. Capabilities owns dependency configuration, standalone Skill editing, one explicit Refresh capabilities control, and published status. Configuration saves never refresh resources.
 - SSE represents one live attempt with queued, admitted, progress, and completed events plus late-event handling.
 - Import wire contracts from `shared/` and keep renderer view state in `web/`.
-- Initial render loads auth, bootstrap, and active session, plus preset names for an active header. Optional surfaces fetch and mount when opened.
+- Initial render loads what `docs/FRONTEND_REQUIREMENTS.md` → Information architecture lists; optional surfaces fetch and mount when opened.
 - Keep production requests same-origin and runtime origins host-owned.
 - The privacy PIN is a client-side casual-viewing screen with intentional browser-control bypass, not authentication. Review against `docs/FRONTEND_REQUIREMENTS.md` → Installed app and local privacy; pairing/API authorization failures and failures to conceal the UI remain defects.
 

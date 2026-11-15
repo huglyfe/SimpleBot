@@ -66,7 +66,7 @@ describe('navigation mutations', () => {
     onlineManager.setOnline(true);
   });
 
-  it('reports an offline read once and waits for explicit Refresh', async () => {
+  it('reports an offline read once and recovers only through Reload', async () => {
     onlineManager.setOnline(false);
     api.getBootstrap.mockRejectedValue(new Error('Server unavailable'));
     render(<App />);
@@ -81,10 +81,19 @@ describe('navigation mutations', () => {
     });
     expect(api.getBootstrap).toHaveBeenCalledTimes(1);
 
-    api.getBootstrap.mockResolvedValue(bootstrap);
-    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
-    expect(await screen.findByText('Start a conversation')).toBeVisible();
-    expect(api.getBootstrap).toHaveBeenCalledTimes(2);
+    // Nothing loaded, so the only way on is the page reload.
+    expect(
+      screen.queryByRole('button', { name: 'Close' }),
+    ).not.toBeInTheDocument();
+    const reload = vi.fn();
+    const original = window.location;
+    vi.stubGlobal('location', { reload });
+    try {
+      await userEvent.click(screen.getByRole('button', { name: 'Reload' }));
+      expect(reload).toHaveBeenCalledOnce();
+    } finally {
+      vi.stubGlobal('location', original);
+    }
   });
 
   it('keeps the mounted app when a background refresh fails', async () => {
@@ -110,8 +119,7 @@ describe('navigation mutations', () => {
       onlineManager.setOnline(true);
     });
     expect(api.getBootstrap).toHaveBeenCalledTimes(2);
-    api.getBootstrap.mockResolvedValue(bootstrap);
-    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() =>
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
     );
@@ -140,6 +148,34 @@ describe('navigation mutations', () => {
     });
   });
 
+  it('admits one conversation create across the welcome grid and drawer until it settles', async () => {
+    const user = userEvent.setup();
+    const pending = Promise.withResolvers<string>();
+    api.getBootstrap.mockResolvedValue(bootstrap);
+    api.createSession.mockReturnValue(pending.promise);
+    render(<App />);
+    const welcome = await screen.findByRole('button', { name: /Seraphina/u });
+    await user.dblClick(welcome);
+    expect(api.createSession).toHaveBeenCalledTimes(1);
+    expect(welcome).toBeDisabled();
+    await user.click(
+      screen.getByRole('button', { name: 'Open conversations' }),
+    );
+    const create = screen.getByRole('button', {
+      name: 'New conversation with Seraphina',
+    });
+    expect(create).toBeDisabled();
+    await user.click(create);
+    expect(api.createSession).toHaveBeenCalledTimes(1);
+    await act(async () => pending.reject(new Error('Create refused')));
+    expect(create).toBeEnabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Create refused');
+    await user.click(
+      screen.getByRole('button', { name: 'Close conversations' }),
+    );
+    expect(welcome).toBeEnabled();
+  });
+
   it('renders when browser preference storage is unavailable', async () => {
     vi.stubGlobal('localStorage', {
       getItem: () => {
@@ -160,7 +196,7 @@ describe('navigation mutations', () => {
   });
 });
 
-it('shows one standard popup for concurrent bootstrap and conversation failures and refreshes both without losing the draft', async () => {
+it('shows one standard popup for concurrent bootstrap and conversation failures and closes it without losing the draft', async () => {
   vi.clearAllMocks();
   const user = userEvent.setup();
   const session = {
@@ -196,11 +232,7 @@ it('shows one standard popup for concurrent bootstrap and conversation failures 
     expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Message')).toHaveValue('Keep my draft');
-    api.getBootstrap.mockResolvedValue(data);
-    api.getSession.mockResolvedValue(projection);
-    await user.click(screen.getByRole('button', { name: 'Refresh' }));
-    await waitFor(() => expect(api.getSession).toHaveBeenCalledTimes(3));
-    expect(api.getBootstrap).toHaveBeenCalledTimes(3);
+    await user.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() =>
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
     );

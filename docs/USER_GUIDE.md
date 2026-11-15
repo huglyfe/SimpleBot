@@ -201,13 +201,13 @@ The privacy PIN is entirely client-side: it hides the interface from casual view
 
 After a successful online load, the service worker caches only the interface and app icons. When the server cannot be reached, the app can still open to its lock screen; after unlocking it reports the connection problem. Reconnect and choose **Retry**. Conversations, bot artwork, attachments, and audio are not stored in the service-worker cache, and messages are never queued for later sending. Browser eviction can remove cached assets, so offline launch is not guaranteed indefinitely.
 
-When the **Update available** dialog appears, choose **Update and reload** to apply it. Unsent drafts and unsaved edits will be lost. Choose **Later** to keep working; refreshing brings the prompt back if the update is still waiting. Server replies continue. Reopen other app windows to use the new version there; closing every app window also lets a waiting update activate. Remove the installation through the OS/browser, and clear site data if you also want to remove its PIN, cookie, and offline assets. Server data remains untouched.
+Updates apply on their own: when a new version is installed on the server, a window picks it up a moment after it next loads, and a window left open picks it up once the browser rechecks, about daily; each open window then reloads onto it. Unsent drafts and unsaved edits in a reloading window are lost; server replies continue. If the app ever shows **Unable to load**, choose **Reload**. Remove the installation through the OS/browser, and clear site data if you also want to remove its PIN, cookie, and offline assets. Server data remains untouched.
 
 ## Set up a provider and start talking
 
 OpenRouter conversation requests automatically share a session identifier for routing affinity. This can improve prompt-cache reuse, but cache hits still depend on the provider, prompt prefix, and cache lifetime; there is no setting to enable.
 
-The default config contains an OpenRouter provider entry referencing `${OPENROUTER_API_KEY}`. Set that variable in the environment that launches SimpleBot. **Providers and keys** edits the credential source and optional base URL. To avoid managing environment variables, add a named credential under **Saved secrets**, then select **Saved secret** in the provider editor. The corresponding `config.json` entry is:
+The default config contains an OpenRouter provider entry referencing `${OPENROUTER_API_KEY}`. Set that variable in the environment that launches SimpleBot. **Providers and keys** edits the credential source and optional base URL. To avoid managing environment variables, choose **Private value** as the key source and enter the key. The corresponding `config.json` entry is:
 
 ```json
 {
@@ -276,11 +276,13 @@ On phones, settings open over the drawer. Closing settings returns to the same d
 
 If a bot card becomes unreadable or disappears, its saved conversations remain listed under the bot slug. Context and speech remain available when the session preset and root config are valid. Opening Bot settings reports the card error.
 
-The centered bot name, shown with the conversation's preset, opens identity, default preset, capabilities, writing, and greetings. Default preset belongs only to the bot. New bots and imported cards without a selection receive the first available preset alphabetically by display name; that choice is saved once and can be changed in Bot settings. Click artwork for a larger view. **Add image** or **Change image** selects a PNG and saves it immediately (up to 10 MB, within the configured image-dimension limit). Image changes are independent of the panel’s Save/Discard controls: discarding text edits keeps the new image. Failed uploads retain the previous image. Settings rows show a title and preview; click a row to edit it. Editable rows sit in one rounded group separated by thin lines, with **Add** at the foot of the group. Red trash controls ask before deleting. Empty bot System and Post-history prompts display Uses preset. Provider rows show URLs and model counts; dependency rows show availability and MCP tool counts, with available entries in green.
+The ring at the right of the header opens **Conversation controls**. It fills as the newest selected reply's prompt approaches the preset's compaction threshold and turns violet when it reaches it: accepting that reply, usually by sending your next message, compacts older exchanges when any are outside the live tail. It changes when a reply finishes, when you select another swipe, or when the conversation's preset or threshold changes, never while you type. After **Compact now** it stays full until the next reply measures the smaller prompt. The tune icon beside it opens the conversation's preset.
+
+The centered bot portrait and name open identity, default preset, capabilities, writing, and greetings. Default preset belongs only to the bot. New bots and imported cards without a selection receive the first available preset alphabetically by display name; that choice is saved once and can be changed in Bot settings. Click artwork for a larger view. **Add image** or **Change image** selects a PNG and saves it immediately (up to 10 MB, within the configured image-dimension limit). Image changes are independent of the panel’s Save/Discard controls: discarding text edits keeps the new image. Failed uploads retain the previous image. Settings rows show a title and preview; click a row to edit it. Editable rows sit in one rounded group separated by thin lines, with **Add** at the foot of the group. Red trash controls ask before deleting. Empty bot System and Post-history prompts display Uses preset. Provider rows show URLs and model counts; dependency rows show availability and MCP tool counts, with available entries in green.
 
 Environment and header entries are editable rows. Enter their names and values, then use the checkmark. Blank or duplicate names keep the editor open with an error.
 
-Preset, Bot, Providers, Capabilities, and Application panels keep edits in a draft. Save (checkmark) persists the panel’s changes and fills with the accent color while there is something to save; a dot beside the panel title marks unsaved changes. Discard (undo arrow) resets them without closing. A nested editor’s Done (checkmark) updates the panel draft; its X closes without applying edits. Closing a dirty panel offers Cancel, Discard, or Save and leave. While saving, editing is blocked and the form stays at normal brightness. Editing resumes when the server confirms the write, while related lists refresh separately. Failed saves keep edits and show an error. Skills and conversation records save independently through their own checkmark control. Capabilities orders its controls Refresh, Discard, Save; the yellow Refresh activates saved files and is disabled while dependency edits are unsaved. Conversation controls holds Context, Summaries, Variables, and Schedules.
+Preset, Bot, Providers, Capabilities, and Application panels keep edits in a draft. Save (checkmark) persists the panel’s changes and fills with the accent color while there is something to save. Discard (undo arrow) resets them without closing. A nested editor’s Done (checkmark) updates the panel draft; its X closes without applying edits. Closing a dirty panel offers Cancel, Discard, or Save and leave. While saving, editing is blocked and the form stays at normal brightness. Editing resumes when the server confirms the write, while related lists refresh separately. Failed saves keep edits and show an error. Skills and conversation records save independently through their own checkmark control. Capabilities orders its controls Refresh, Discard, Save; the yellow Refresh activates saved files and is disabled while dependency edits are unsaved. Conversation controls holds Context, Summaries, Variables, and Schedules.
 
 Choosing a preset in Preset settings applies it to the current conversation immediately and persists across reloads. Search by name or slug; on phones, the picker fills the screen and the keyboard opens when you tap search. Unsaved preset edits offer Save, Discard, or Cancel before switching. Clone creates and selects a new preset. Delete lets you choose an unused preset and refuses any preset still referenced by a conversation or bot.
 
@@ -305,7 +307,7 @@ The transcript opens at the newest page. **Return to latest** appears after scro
 
 ### Composer
 
-Leaving the web app does not stop a response that has already begun. Reopen the conversation to see the saved answer; if it is still running, the page checks until it finishes and Stop remains available. A failed refresh leaves loaded messages and open drafts visible with an error notice. Use **Refresh conversation** or **Refresh conversations** to read again; returning to the tab or reconnecting does not retry the failed read. Partial streamed text may disappear on return until the saved answer arrives. Queued requests also continue after disconnection; explicit Stop cancels them. Internal effects from a detached response remain available for explicit application.
+Leaving the web app does not stop a response that has already begun. Reopen the conversation to see the saved answer; if it is still running, the page checks until it finishes and Stop remains available. A failed read shows **Unable to load**: **Reload** reloads the page, and **Close** keeps loaded messages and open drafts visible. Returning to the tab or reconnecting does not retry the failed read. Partial streamed text may disappear on return until the saved answer arrives. Queued requests also continue after disconnection; explicit Stop cancels them. Internal effects from a detached response remain available for explicit application.
 
 The transcript scrolls behind the translucent toolbar and composer, with clear space around the composer and padding to keep the beginning and end reachable. The composer stays in place when focused on desktop. On narrow touch screens, focusing it reduces its bottom gutter to leave more room for typing. The composer owns only the next user turn. Text starts at the top-left, with image attachment at the top-right and Send/Stop at the bottom-right. Staged images appear above the entry area only when present. To-dos, variables, and schedules live in **Conversation controls**; search lives in the conversation drawer.
 
@@ -456,7 +458,7 @@ Accepting a response checks its saved provider-reported prompt size against the 
 
 Reducing the preset’s live tail makes the newly eligible older exchanges compactable immediately, even without another reply. Repeated **Compact now** requests do nothing once that history is covered.
 
-Each summary in Context has a **Regenerate summary** button (the circular arrow at the right of the row). It summarizes that range again from the transcript as it reads now, using the preset's current Summary model, effort, and prompt, and replaces the summary text, including any hand edits. Use it after a fallback, a model or prompt change, or edits to the covered messages. If the call fails, the summary stays as it was and Context shows the error. Later summaries are not regenerated. Nothing regenerates automatically.
+Each summary in Context has a **Regenerate summary** button (the yellow circular arrow at the right of the row). It summarizes that range again from the transcript as it reads now, using the preset's current Summary model, effort, and prompt, and replaces the summary text, including any hand edits. Use it after a fallback, a model or prompt change, or edits to the covered messages. If the call fails, the summary stays as it was and Context shows the error. Later summaries are not regenerated. Nothing regenerates automatically.
 
 The Summary prompt and its authored bot, scenario, and persona context use the same macro expansion as ordinary chat. Stored transcript and prior-summary text remain unchanged. The summary request resembles this:
 
@@ -813,6 +815,8 @@ The small JSON-array format is also supported for hand-authored examples:
 
 The root config owns the TTS connection. Open its row under Providers & Keys, or Add speech connection. Done stages the connection; the Providers panel Save persists it. Confirmed removal also enters the panel draft. Presets own voice and speed. Speech uses a stored assistant answer and does not alter conversation context.
 
+Any OpenAI-compatible `audio/speech` endpoint works, including OpenRouter: use base URL `https://openrouter.ai/api/v1`, a speech model such as `openai/gpt-4o-mini-tts-2025-12-15`, and the same `OPENROUTER_API_KEY` environment variable as the chat provider. Voices differ by model, so set the preset voice to one the model lists. A speed of 1 is not sent, because some models reject the parameter.
+
 SimpleBot caches a complete audio file against the answer revision and TTS configuration. Editing the answer changes the revision and prevents stale audio from being reused. Cached reachable audio is included in a backup.
 
 ### Docker terminal and file tools
@@ -906,7 +910,7 @@ This takes effect after restart. The server uses plain HTTP and skips pairing. S
 
 Root `config.json` owns application settings, providers, ordinary MCP definitions, Memory-server definitions, Docker containers, TTS, timezone, and login. The WebUI saves it atomically.
 
-Settings writes use the revision opened by the editor, so another writer’s changes cannot be silently overwritten. A failed save retains typed text. For stale-write errors, close the focused editor if open and choose Reload latest on the owner panel to read current disk state before editing again.
+Settings writes use the revision opened by the editor, so another writer’s changes cannot be silently overwritten. While a save is in progress, editing and Close/Discard are disabled. A failed save retains typed text and restores the controls. For stale-write errors, close the focused editor if open and choose Reload latest on the owner panel to read current disk state before editing again.
 
 Preset, model, timezone, and voice pickers expand inline. Search, choose a result, or press Escape to collapse the choices. Saved selections stay visible when missing from the catalog; this does not rule out a valid custom model ID. Empty catalogs show guidance without clearing your selection. The timezone picker stores IANA identifiers. Capabilities has structured editors for MCP servers, Memory servers, Docker targets, and Skills. Dependency checkmarks update the panel draft; panel Save persists the configuration. Skills save individually, and the Refresh capabilities icon separately loads saved configuration and Skills. Refresh reconnects MCP/Memory and re-inspects Docker without restarting running containers. The icon spins while pending. Published tool counts and status remain from the last refresh until you refresh again. Unsaved provider connections show Unsaved. Saved provider model counts reflect catalog discovery; failures show Catalog unavailable.
 
@@ -914,11 +918,13 @@ A new `config.json` holds only the settings you actually choose: the timezone an
 
 The default tool-call limit is 30 per turn, including tool searches. The separate model-call limit remains five; raising the tool-call limit does not provide 30 sequential model round trips. Explicit saved limits remain in effect until changed or reset.
 
-Provider keys, TTS keys, and MCP/Memory environment or header values accept exact `${NAME}` environment references or `secret:NAME` saved-secret references. Literal credentials in configuration are rejected.
+Each provider key, speech key, and MCP/Memory environment or header value has a source:
 
-**Saved secrets** appears in **Providers and keys**; MCP and Memory credentials in **Capabilities** select from the same list. Add a name and value, then choose that saved secret in the connection editor. Saving or replacing a secret happens immediately; saving the connection reference still uses the panel Save. Values cannot be revealed, and replacement inputs start empty. Removing an in-use secret requires saving different connection references first. Reload secrets after a stale-write conflict.
+- **Environment variable** saves an exact `${NAME}` reference, resolved from the environment that launches SimpleBot.
+- **Private value** saves the value write-only. It is never shown again; type a new value to overwrite it, or leave the field empty to keep it. Switch the source and save to drop it.
+- **Plain text** is offered for MCP/Memory environment and header values only. API keys are never plain text. A plain value that is exactly `${NAME}` is treated as an environment reference.
 
-Saved values live in the operator root's private `secrets.json` (0600 on POSIX). This is file-backed storage, not encryption at rest. Backups and exports exclude it; re-enter saved credentials after restoring. Provider and speech requests use newly saved values; an already assembled attempt keeps its key. Refresh capabilities explicitly to reopen MCP/Memory connections with changed credentials. Saved secrets are not injected into Docker.
+Private values save with the panel like every other setting. `config.json` holds only an opaque `{"private": "…"}` ID; the value lives in the operator root's private `secrets.json` (0600 on POSIX). This is file-backed storage, not encryption at rest. Backups and exports exclude it; re-enter private values after restoring. Provider and speech requests use newly saved values; an already assembled attempt keeps its key. Refresh capabilities explicitly to reopen MCP/Memory connections with changed values. Private values are not injected into Docker.
 
 ## Back up, restore, and recover
 
@@ -947,7 +953,7 @@ New backups and restored roots have a private enclosing directory on macOS/Linux
 
 The backup cannot capture outside authorities. Its manifest names these separately:
 
-- environment credentials and saved secrets (re-enter after restore);
+- environment credentials and private values (re-enter after restore);
 - custom TLS paths;
 - Docker containers and their filesystems;
 - provider and remote MCP data.
@@ -994,6 +1000,10 @@ SIMPLEBOT_ROOT=/srv/simplebot simplebot doctor
 Preserve evidence first. If startup or doctor reports database trouble, do not delete `app.db`, `app.db-wal`, or `app.db-shm`. Back up the exact root and identify the schema or file error before changing anything.
 
 SimpleBot is public alpha software. A release may change the schema; startup accepts only the exact version required by that build. Back up before updating and retain the matching application version. Schema-changing updates need an explicitly prepared conversion or a fresh root; upgrade compatibility is not guaranteed. Startup never converts an existing database automatically.
+
+The `v0.1.0-alpha.2` source release requires schema 20; the preceding public source uses schema 19. The change adds an index for unfinished responses. Existing databases need a separately prepared conversion after backup, or a fresh root. Do not change the schema version alone.
+
+This release also replaces named `secret:NAME` credentials with write-only private values. Before upgrading an existing root, replace every old named reference with an exact `${NAME}` environment reference and set those variables in the server environment. This includes provider and speech keys and MCP/Memory environment and header values. Preserve the old `secrets.json` securely outside the root for rollback, then remove that old-format file from the root before starting the new version. Once running, you can enter replacement keys through **Private value** in settings. Backups exclude private values, so retain your credentials separately.
 
 ## Privacy and security
 
@@ -1143,7 +1153,7 @@ SimpleBot has one owner and one authentication domain. It has no multi-user perm
 
 ### Where should secrets live?
 
-Prefer exact `${NAME}` references in `config.json` and provide values through the launch environment. Back up those environment values separately and securely.
+Use environment variables when a service manager launches SimpleBot, or private values to keep keys in the operator root without managing the environment. Neither is included in backups; keep the values somewhere safe.
 
 ### What should I back up before an upgrade?
 

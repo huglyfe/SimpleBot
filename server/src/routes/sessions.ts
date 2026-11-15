@@ -102,6 +102,7 @@ export function registerSessionRoutes(
 
   app.delete('/api/sessions/:sessionId', async (request, reply) => {
     const { sessionId } = request.params as { sessionId: string };
+    ctx.attempts.cancelSession(sessionId);
     await ctx.storage.deleteSession(sessionId);
     return reply.code(204).send();
   });

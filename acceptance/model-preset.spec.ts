@@ -45,7 +45,7 @@ for (const width of [1280, 390]) {
       name: 'Open conversations',
       exact: true,
     });
-    if (await drawer.isVisible()) await drawer.click();
+    if (width === 390) await drawer.click();
     await page
       .getByRole('button', { name: 'Application settings', exact: true })
       .click();
@@ -60,7 +60,7 @@ for (const width of [1280, 390]) {
     await application
       .getByRole('button', { name: 'Close panel', exact: true })
       .click();
-    if (await drawer.isVisible()) await drawer.click();
+
     await page.getByRole('button', { name: 'New bot', exact: true }).click();
     const creation = page.getByRole('dialog', { name: 'New bot', exact: true });
     const name = `Model preset ${String(width)}`;
@@ -95,7 +95,6 @@ for (const width of [1280, 390]) {
       bot.getByRole('button', { name: 'Save', exact: true }),
     ).toBeDisabled();
     await bot.getByRole('button', { name: 'Close panel', exact: true }).click();
-    if (await drawer.isVisible()) await drawer.click();
     const created = page.waitForResponse(
       (response) =>
         new URL(response.url()).pathname === '/api/sessions' &&

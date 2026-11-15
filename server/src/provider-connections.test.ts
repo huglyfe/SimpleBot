@@ -5,7 +5,6 @@ import test from 'node:test';
 import { radiusProvider } from '@earendil-works/pi-ai/providers/all';
 import { openrouterProvider } from '@earendil-works/pi-ai/providers/openrouter';
 import { providerModelsResponseSchema } from '@simplebot/shared';
-import { SecretStore } from './secrets.js';
 import { AuthoredFiles } from './authored.js';
 import { assembleAttempt } from './assemble.js';
 import { disposeTestFixture, createTestFixture } from './test-helper.js';
@@ -92,8 +91,8 @@ test('OpenRouter sends the durable session header through both provider APIs wit
   }
 });
 
-for (const savedSecret of [false, true]) {
-  test(`saved provider references and URLs drive discovery and immutable generation; missing references never fall back (saved secret: ${String(savedSecret)})`, async (t) => {
+for (const privateValue of [false, true]) {
+  test(`saved provider references and URLs drive discovery and immutable generation; missing references never fall back (private value: ${String(privateValue)})`, async (t) => {
     const fixture = await createTestFixture();
     t.after(() => disposeTestFixture(fixture));
     fixture.models.setProvider(radiusProvider());
@@ -138,20 +137,14 @@ for (const savedSecret of [false, true]) {
         providers: {
           ...config.value.providers,
           radius: {
-            apiKey: savedSecret
-              ? 'secret:CONNECTION_KEY'
+            apiKey: privateValue
+              ? { value: 'synthetic-connection-key' }
               : '${SIMPLEBOT_CONNECTION_TEST_KEY}',
             baseUrl,
           },
         },
       },
       config.revision,
-    );
-    const secrets = new SecretStore(fixture.root);
-    secrets.write(
-      'CONNECTION_KEY',
-      'synthetic-connection-key',
-      secrets.list().revision,
     );
     const app = fixture.runtime.app;
     const response = await app.inject('/api/providers/radius/models');
@@ -193,7 +186,6 @@ for (const savedSecret of [false, true]) {
     });
     assert.equal(assembly.model.baseUrl, baseUrl);
     assert.equal(assembly.streamOptions.apiKey, 'synthetic-connection-key');
-    secrets.write('CONNECTION_KEY', 'replacement-key', secrets.list().revision);
     const next = await authored.readConfig();
     await authored.writeConfig(
       {
@@ -208,7 +200,10 @@ for (const savedSecret of [false, true]) {
     const failed = providerModelsResponseSchema.parse(
       (await app.inject('/api/providers/radius/models')).json(),
     );
-    assert.match(failed.error ?? '', /credential reference is unavailable/u);
+    assert.match(
+      failed.error ?? '',
+      /environment variable SIMPLEBOT_MISSING_CONNECTION_KEY is unavailable/u,
+    );
     assert.equal(failed.models[0]?.id, 'connection-test');
     assert.equal(requests.length, 1);
     assert.equal(assembly.streamOptions.apiKey, 'synthetic-connection-key');

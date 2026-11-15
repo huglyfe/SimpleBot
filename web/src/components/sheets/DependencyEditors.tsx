@@ -2,6 +2,7 @@ import { type ReactElement, type ReactNode } from 'react';
 import type {
   CapabilityCatalog,
   DependencyConfigDraft,
+  ServerValue,
 } from '@simplebot/shared';
 import { Field } from '../primitives/Field.js';
 import {
@@ -23,7 +24,7 @@ function serverDraft(value: McpDefinition): ServerDraft {
     : { ...value, headers: Object.entries(value.headers) };
 }
 
-function entryMap(entries: Entries): Record<string, string> {
+function entryMap(entries: Entries): Record<string, ServerValue> {
   const names = new Set<string>();
   return Object.fromEntries(
     entries.map(([raw, value]) => {

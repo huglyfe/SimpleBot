@@ -1,5 +1,5 @@
 /**
- * The client's view of one conversation: session-wide state, plus however much
+ * The client's view of one conversation: its active attempt, plus however much
  * transcript the operator has actually asked for.
  *
  * The transcript is the only part that grows without bound, so it is the only
@@ -21,7 +21,6 @@ import type {
 export const LOADED_POSITION_LIMIT = 150;
 
 export interface ConversationState {
-  session: Omit<SessionProjection, 'page' | 'activeAttemptId'>;
   activeAttemptId: SessionProjection['activeAttemptId'];
   /** Loaded positions in reading order; may start mid-conversation. */
   positions: MessagePosition[];
@@ -32,9 +31,8 @@ export interface ConversationState {
 export function fromProjection(
   projection: SessionProjection,
 ): ConversationState {
-  const { page, activeAttemptId, ...session } = projection;
+  const { page, activeAttemptId } = projection;
   return {
-    session,
     activeAttemptId,
     positions: page.positions,
     hasMore: page.hasMore,
@@ -94,7 +92,6 @@ export function mergeTail(
   );
   if (older.at(-1)?.ordinal !== first.ordinal - 1) return next;
   return {
-    session: next.session,
     activeAttemptId: next.activeAttemptId,
     positions: [...older, ...next.positions],
     // Older pages are loaded, so whether more exist is still their answer.
@@ -103,7 +100,8 @@ export function mergeTail(
 }
 
 /**
- * Folds a mutation's answer in: session state wholesale, changed rows by ID.
+ * Folds a mutation's changed rows in by ID. Session metadata stays with the
+ * bootstrap, which owns it in the client.
  *
  * Rows outside the loaded pages are dropped rather than inserted, because a
  * page is a contiguous slice and a stray row would punch a hole in it.
@@ -112,12 +110,9 @@ export function applyChange(
   current: ConversationState,
   change: SessionChange,
 ): ConversationState {
-  const { positions, ...session } = change;
   return {
-    session,
-    activeAttemptId: current.activeAttemptId,
-    positions: replaceById(current.positions, positions),
-    hasMore: current.hasMore,
+    ...current,
+    positions: replaceById(current.positions, change.positions),
   };
 }
 

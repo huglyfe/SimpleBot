@@ -131,7 +131,7 @@ function CapabilitiesEditor({
       <SkillEditors skills={skills} />
       <Section
         title="External dependencies"
-        description="MCP and Memory reconnect; Docker targets are re-inspected without restarting containers. Saved secrets live in Providers & Keys."
+        description="MCP and Memory reconnect; Docker targets are re-inspected without restarting containers."
       >
         <DependencyEditors
           value={editor.value}

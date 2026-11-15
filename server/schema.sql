@@ -1,5 +1,5 @@
 PRAGMA foreign_keys = ON;
-PRAGMA user_version = 19;
+PRAGMA user_version = 20;
 
 CREATE TABLE sessions (
   id TEXT PRIMARY KEY,
@@ -178,6 +178,11 @@ CREATE INDEX message_positions_session_order
 
 CREATE INDEX message_variants_position_order
   ON message_variants(position_id, ordinal);
+
+-- Only admitted, unfinished responses have empty source. Startup finds them
+-- through this index instead of reading every stored response.
+CREATE INDEX message_variants_unfinished
+  ON message_variants(position_id) WHERE source = '';
 
 CREATE INDEX effects_session_state_order
   ON effects(session_id, state, position_id, ordinal);

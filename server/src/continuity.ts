@@ -1,6 +1,7 @@
 import type { Api, Context, Model, Models } from '@earendil-works/pi-ai';
 
-import type { AuthoredAttempt, AuthoredFiles } from './authored.js';
+import type { AuthoredFiles } from './authored.js';
+import type { AuthoredAttempt } from './authored-schemas.js';
 import { providerConnection } from './credentials.js';
 import {
   StorageConflictError,

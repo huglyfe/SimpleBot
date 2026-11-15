@@ -135,10 +135,13 @@ test('automatic compaction uses prompt usage and waits for acceptance', async (c
   const beforeCompaction = (await (
     await fetch(`${address}/api/sessions/${sessionId}/context`)
   ).json()) as SessionContext;
+  // The header's context ring reads these two numbers; they must be the gate's.
+  assert.equal(beforeCompaction.compactionThresholdTokens, thresholdTokens);
   assert.equal(
     beforeCompaction.lastRequestUsage === null
       ? null
-      : promptTokenCount(beforeCompaction.lastRequestUsage) < thresholdTokens,
+      : promptTokenCount(beforeCompaction.lastRequestUsage) <
+          beforeCompaction.compactionThresholdTokens,
     true,
   );
   assert.ok(

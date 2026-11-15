@@ -381,7 +381,7 @@ test('Skills save independently and publish only after explicit capability refre
   await expect.poll(catalogHasSkill).toBe(false);
 });
 
-test('load failure uses the standard popup and recovers only on explicit Refresh', async ({
+test('load failure uses the standard popup and recovers only on explicit Reload', async ({
   page,
 }) => {
   await page.route('**/api/bootstrap', (route) =>
@@ -397,7 +397,7 @@ test('load failure uses the standard popup and recovers only on explicit Refresh
   await expect(popup).toContainText('Server unavailable');
   await expect(page.getByRole('alertdialog')).toHaveCount(1);
   await page.unroute('**/api/bootstrap');
-  await popup.getByRole('button', { name: 'Refresh' }).click();
+  await popup.getByRole('button', { name: 'Reload' }).click();
   await expect(popup).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'Application settings' }),

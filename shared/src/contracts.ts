@@ -325,6 +325,8 @@ export const usageSchema = z.strictObject({
     cacheRead: z.number().nonnegative(),
     cacheWrite: z.number().nonnegative(),
     total: z.number().nonnegative(),
+    /** pi-ai: true when `total` is the provider's billed cost, not an estimate. */
+    totalFromProvider: z.boolean().optional(),
   }),
 });
 
@@ -421,6 +423,8 @@ export const sessionContextSchema = z.strictObject({
     }),
   ),
   lastRequestUsage: usageSchema.nullable(),
+  /** Accepting a response whose prompt reaches this many tokens compacts. */
+  compactionThresholdTokens: z.number().int().positive(),
   /** Provider-reported cost of every call in the latest selected swipe, in USD. */
   lastSwipeCost: z.number().nonnegative().nullable(),
   exactFromExchange: z.number().int().positive(),

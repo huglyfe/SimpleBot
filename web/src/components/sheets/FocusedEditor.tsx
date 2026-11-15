@@ -55,16 +55,8 @@ export function FocusedEditor<T>({
       visual.removeEventListener('scroll', resize);
     };
   }, []);
-  function close(): void {
-    if (pending) return;
-    onClose();
-  }
   async function submit(): Promise<void> {
     if (pending || !valid(draft)) return;
-    // Keep focus inside the sheet before disabling the submitting control.
-    surface.current
-      ?.querySelector<HTMLElement>('[aria-label="Discard"]')
-      ?.focus({ preventScroll: true });
     setPending(true);
     setError(null);
     try {
@@ -82,7 +74,8 @@ export function FocusedEditor<T>({
         title={title}
         closeLabel="Discard"
         placement="center"
-        onClose={close}
+        onClose={onClose}
+        dismissible={!pending}
         returnFocus={returnFocus}
       >
         <SheetActions>

@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import {
   closeSync,
   constants,
@@ -11,17 +11,26 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { appConfigSchema, secretNameSchema } from '@simplebot/shared';
-import { AuthoredConflictError } from './authored-schemas.js';
+import {
+  mapServerValues,
+  privateReference,
+  type AppConfig,
+} from '@simplebot/shared';
 
-const secretsSchema = z.record(secretNameSchema, z.string().min(1).max(16_384));
+const MAX_BYTES = 2_097_152;
+const valuesSchema = z.record(
+  privateReference.shape.private,
+  z.string().min(1).max(16_384),
+);
 
-/** Private file authority. Synchronous mutations cannot interleave in this process. */
-export class SecretStore {
+/**
+ * Private file authority for write-only values. Config holds only opaque IDs;
+ * synchronous reads and writes cannot interleave in this process.
+ */
+export class PrivateValues {
   constructor(readonly root: string) {}
 
-  private read() {
-    let source = '{}';
+  #read(): Record<string, string> {
     let fd: number | undefined;
     try {
       fd = openSync(
@@ -31,91 +40,78 @@ export class SecretStore {
       const stat = fstatSync(fd);
       if (
         !stat.isFile() ||
-        stat.size > 2_097_152 ||
+        stat.size > MAX_BYTES ||
         (process.platform !== 'win32' &&
           (stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0))
       )
         throw new Error('Invalid private store');
-      source = readFileSync(fd, 'utf8');
-      const values = secretsSchema.parse(JSON.parse(source));
-      return {
-        values,
-        revision: createHash('sha256').update(source).digest('hex'),
-      };
+      return valuesSchema.parse(JSON.parse(readFileSync(fd, 'utf8')));
     } catch (error) {
-      if (!(
-        error instanceof Error &&
-        'code' in error &&
-        error.code === 'ENOENT'
-      ))
-        // Parser errors can contain secret material; never retain their cause.
-        // eslint-disable-next-line preserve-caught-error
-        throw new Error(
-          'Secret store is unreadable, invalid, or not private (0600 required).',
-        );
-      return {
-        values: {} as Record<string, string>,
-        revision: createHash('sha256').update(source).digest('hex'),
-      };
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
+        return {};
+      // Parser errors can contain private material; never retain their cause.
+      // eslint-disable-next-line preserve-caught-error
+      throw new Error(
+        'Private values are unreadable, invalid, or not private (0600 required).',
+      );
     } finally {
       if (fd !== undefined) closeSync(fd);
     }
   }
 
-  list() {
-    const { values, revision } = this.read();
-    return { names: Object.keys(values).sort(), revision };
+  resolve(id: string): string | undefined {
+    const values = this.#read();
+    return Object.hasOwn(values, id) ? values[id] : undefined;
   }
 
-  resolve(name: string): string | undefined {
-    const { values } = this.read();
-    return Object.hasOwn(values, name) ? values[name] : undefined;
+  /**
+   * Store the candidate's new values under fresh IDs and return the config to
+   * publish. Values referenced by the prior config stay until a later save, so
+   * a failed config publish never strands the configuration still on disk.
+   */
+  admit(prior: AppConfig, candidate: AppConfig): AppConfig {
+    const current = this.#read();
+    const added: Record<string, string> = {};
+    const saved = mapServerValues(candidate, (value) => {
+      if (typeof value === 'string' || !('value' in value)) return value;
+      const id = randomBytes(16).toString('hex');
+      added[id] = value.value;
+      return { private: id };
+    });
+    const keep = new Set([...privateIds(prior), ...privateIds(saved)]);
+    const retained = Object.fromEntries(
+      Object.entries(current).filter(([id]) => keep.has(id)),
+    );
+    if (
+      Object.keys(added).length > 0 ||
+      Object.keys(retained).length !== Object.keys(current).length
+    )
+      this.#write({ ...retained, ...added });
+    return saved;
   }
 
-  write(name: string, value: string | null, expectedRevision: string) {
-    secretNameSchema.parse(name);
-    const current = this.read();
-    if (current.revision !== expectedRevision)
-      throw new AuthoredConflictError('Secrets changed; reload and try again.');
-    if (value === null) {
-      const config = appConfigSchema.parse(
-        JSON.parse(readFileSync(join(this.root, 'config.json'), 'utf8')),
-      );
-      const users: string[] = [];
-      const reference = `secret:${name}`;
-      for (const [id, provider] of Object.entries(config.providers))
-        if (provider.apiKey === reference) users.push(`provider ${id}`);
-      if (config.tts?.apiKey === reference) users.push('TTS');
-      for (const [id, server] of Object.entries({
-        ...config.mcpServers,
-        ...config.memoryServers,
-      }))
-        if (
-          Object.values(
-            server.type === 'stdio' ? server.env : server.headers,
-          ).includes(reference)
-        )
-          users.push(`server ${id}`);
-      if (users.length > 0)
-        throw new AuthoredConflictError(
-          `Secret is used by ${users.join(', ')}. Save their new references before removing it.`,
-        );
-    }
-    const values = { ...current.values };
-    if (value === null) delete values[name];
-    else values[name] = value;
-    const source = JSON.stringify(secretsSchema.parse(values), null, 2) + '\n';
-    if (Buffer.byteLength(source) > 2_097_152)
-      throw new Error('Secret store is full.');
+  #write(values: Record<string, string>): void {
+    const source = `${JSON.stringify(values, null, 2)}\n`;
+    if (Buffer.byteLength(source) > MAX_BYTES)
+      throw new Error('Private value storage is full.');
     const temporary = join(this.root, `.secrets-${randomUUID()}.tmp`);
     try {
       writeFileSync(temporary, source, { mode: 0o600, flag: 'wx' });
       renameSync(temporary, join(this.root, 'secrets.json'));
     } catch {
-      throw new Error('Could not save the secret store.');
+      throw new Error('Could not save private values.');
     } finally {
       rmSync(temporary, { force: true });
     }
-    return this.list();
   }
+}
+
+function privateIds(config: AppConfig): string[] {
+  const ids: string[] = [];
+  mapServerValues(config, (value) => {
+    if (typeof value !== 'string' && 'private' in value)
+      ids.push(value.private);
+    return value;
+  });
+  return ids;
 }

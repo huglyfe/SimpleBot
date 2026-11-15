@@ -8,7 +8,7 @@ import Database from 'better-sqlite3';
  * number, and a fresh database is checked against it on creation, so the two
  * cannot drift silently.
  */
-export const SCHEMA_VERSION = 19;
+export const SCHEMA_VERSION = 20;
 
 const expectedTables = [
   'attachments',

@@ -13,7 +13,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
-import { AuthoredFiles, AuthoredValidationError } from './authored.js';
+import { AuthoredFiles } from './authored.js';
+import { AuthoredValidationError } from './authored-schemas.js';
 import { buildAttemptTools, searchExternalTools } from './assemble-tools.js';
 import { activateCapabilities, ActivatedCapabilities } from './capabilities.js';
 import { activateDocker } from './docker.js';
@@ -59,7 +60,7 @@ test('bot capabilities are exact, unique, and clean-slate', async (context) => {
   }
 });
 
-test('configured credentials are exact environment references', async (context) => {
+test('API keys are references, never literals; server values round-trip', async (context) => {
   const root = await authoredRoot({
     mcpServers: {
       weather: mcpDefinition({
@@ -91,11 +92,6 @@ test('configured credentials are exact environment references', async (context) 
 
   for (const invalid of [
     { providers: { faux: { apiKey: 'literal' } } },
-    {
-      mcpServers: {
-        weather: { ...mcpDefinition(), env: { TOKEN: '' } },
-      },
-    },
     { memoryServers: { weather: mcpDefinition() } },
     { mcpServers: { weather__other: mcpDefinition() } },
     { mcpServers: { weather_: mcpDefinition() } },

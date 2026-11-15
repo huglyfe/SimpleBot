@@ -1,5 +1,4 @@
 import {
-  secretListSchema,
   type TodoCreate,
   AUTH_REQUIRED_EVENT,
   authStatusResponseSchema,
@@ -38,22 +37,6 @@ import {
   type ScheduleWrite,
   type TranscriptPage,
 } from '@simplebot/shared';
-
-export const getSecrets = () => requestJson('/api/secrets', secretListSchema);
-export const saveSecret = (
-  name: string,
-  value: string,
-  expectedRevision: string,
-) =>
-  requestJson(`/api/secrets/${encodeURIComponent(name)}`, secretListSchema, {
-    method: 'PUT',
-    body: JSON.stringify({ value, expectedRevision }),
-  });
-export const removeSecret = (name: string, expectedRevision: string) =>
-  requestJson(`/api/secrets/${encodeURIComponent(name)}`, secretListSchema, {
-    method: 'DELETE',
-    body: JSON.stringify({ expectedRevision }),
-  });
 
 /**
  * A refused request, carrying the status alongside the server's message.
@@ -100,12 +83,30 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
   return response;
 }
 
+interface Schema<T> {
+  safeParse(value: unknown): { success: true; data: T } | { success: false };
+}
+
+/**
+ * A response outside the shared contract is almost always this page being
+ * older than the server, which a reload fixes. Say that instead of showing a
+ * schema dump.
+ */
+function parseResponse<T>(schema: Schema<T>, value: unknown, path: string): T {
+  const result = schema.safeParse(value);
+  if (!result.success)
+    throw new Error(
+      `Unexpected response from ${path}. Reload to load the current version.`,
+    );
+  return result.data;
+}
+
 async function requestJson<T>(
   path: string,
-  schema: { parse(value: unknown): T },
+  schema: Schema<T>,
   init?: RequestInit,
 ): Promise<T> {
-  return schema.parse(await (await request(path, init)).json());
+  return parseResponse(schema, await (await request(path, init)).json(), path);
 }
 
 export function getAuthStatus(signal: AbortSignal) {
@@ -477,7 +478,11 @@ export async function streamAttempt(
     buffer = lines.pop() ?? '';
     for (const line of lines) {
       if (line.startsWith('data: ')) {
-        const event = attemptEventSchema.parse(JSON.parse(line.slice(6)));
+        const event = parseResponse(
+          attemptEventSchema,
+          JSON.parse(line.slice(6)),
+          'the reply stream',
+        );
         onEvent(event);
       }
     }

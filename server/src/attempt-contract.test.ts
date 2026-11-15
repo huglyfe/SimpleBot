@@ -430,6 +430,60 @@ test('stopping after admission completes the canonical response', async (context
   );
 });
 
+test('deleting a conversation stops its running reply and reports the response it could not save', async (context) => {
+  const fixture = await createTestFixture();
+  context.after(() => disposeTestFixture(fixture));
+  const errors = context.mock.method(console, 'error', () => undefined);
+  const started = Promise.withResolvers<undefined>();
+  const aborted = Promise.withResolvers<undefined>();
+  fixture.faux.setResponses([
+    (_providerContext, options) => {
+      started.resolve(undefined);
+      return new Promise((resolve) =>
+        options?.signal?.addEventListener(
+          'abort',
+          () => {
+            aborted.resolve(undefined);
+            resolve(
+              fauxAssistantMessage('Partial.', {
+                stopReason: 'aborted',
+                errorMessage: 'aborted',
+              }),
+            );
+          },
+          { once: true },
+        ),
+      );
+    },
+  ]);
+  const address = await listen(fixture.runtime);
+  const sessionId = await createSession(address);
+  const response = await streamAttempt(address, sessionId, {
+    kind: 'reply',
+    text: 'Keep going.',
+  });
+  await started.promise;
+  const deleted = await fetch(`${address}/api/sessions/${sessionId}`, {
+    method: 'DELETE',
+  });
+  assert.equal(deleted.status, 204);
+  await Promise.race([
+    aborted.promise,
+    setTimeout(2_000).then(() => {
+      throw new Error('Deletion did not stop the running reply');
+    }),
+  ]);
+  const events = await readEvents(response);
+  assert.notEqual(events.at(-1)?.type, 'completed');
+  assert.equal(fixture.runtime.attempts.activeAttemptId(sessionId), null);
+  assert.deepEqual(
+    errors.mock.calls.map((call) => call.arguments[0] as string),
+    [
+      `Could not save the response in session ${sessionId}: Admitted variant cannot be completed`,
+    ],
+  );
+});
+
 async function projection(address: string, sessionId: string) {
   const response = await fetch(`${address}/api/sessions/${sessionId}`);
   if (!response.ok) throw new Error(await response.text());

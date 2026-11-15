@@ -19,7 +19,7 @@ test('creates and edits a bot, starts empty, sends and reopens its first convers
     name: 'Open conversations',
     exact: true,
   });
-  if (await drawer.isVisible()) await drawer.click();
+
   await page.getByRole('button', { name: 'New bot', exact: true }).click();
   const create = page.getByRole('dialog', { name: 'New bot', exact: true });
   await create.getByLabel('Bot name').fill('Browser Utility');
@@ -51,7 +51,7 @@ test('creates and edits a bot, starts empty, sends and reopens its first convers
   await page.setViewportSize({ width: 390, height: 844 });
   await bot.getByRole('button', { name: 'Save', exact: true }).click();
   await bot.getByRole('button', { name: 'Close panel', exact: true }).click();
-  if (await drawer.isVisible()) await drawer.click();
+  await drawer.click();
   const created = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname === '/api/sessions' &&
@@ -186,11 +186,6 @@ test('bot image changes save immediately across the panel, header, drawer, and r
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');
   await expect(page).toHaveTitle(/SimpleBot/u);
-  const drawer = page.getByRole('button', {
-    name: 'Open conversations',
-    exact: true,
-  });
-  if (await drawer.isVisible()) await drawer.click();
   await page
     .getByRole('button', { name: 'New conversation with Echo', exact: true })
     .click();

@@ -43,6 +43,7 @@ const context: SessionContext = {
       total: 0.003,
     },
   },
+  compactionThresholdTokens: 10_000,
   lastSwipeCost: 0.0125,
   exactFromExchange: 1,
   currentExchange: 2,
@@ -112,6 +113,7 @@ describe('ConversationSheet', () => {
       ),
     ).toEqual([
       'Last request tokens',
+      'Compacts at',
       'Prompt cache',
       'Last message cost',
       'Current exchange',

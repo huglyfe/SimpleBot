@@ -30,14 +30,14 @@ function position(
 
 function projection(
   positions: MessagePosition[],
-  options: { hasMore?: boolean; updatedAt?: string } = {},
+  options: { hasMore?: boolean } = {},
 ): SessionProjection {
   return {
     id: 'session-1',
     botSlug: 'seraphina',
     presetSlug: 'default',
     createdAt: '2026-08-14T09:00:00.000Z',
-    updatedAt: options.updatedAt ?? '2026-08-14T09:00:00.000Z',
+    updatedAt: '2026-08-14T09:00:00.000Z',
     activeAttemptId: null,
     page: { positions, hasMore: options.hasMore ?? false },
   };
@@ -65,25 +65,22 @@ describe('conversation cache', () => {
       held,
       projection([position(4, 'edited'), position(5), position(6)], {
         hasMore: true,
-        updatedAt: '2026-08-14T10:00:00.000Z',
       }),
     );
     expect(merged.positions.map((row) => row.ordinal)).toEqual([2, 3, 4, 5, 6]);
     expect(merged.positions[2]).toMatchObject({ source: 'edited' });
     expect(merged.hasMore).toBe(false);
-    expect(merged.session.updatedAt).toBe('2026-08-14T10:00:00.000Z');
   });
 
   it('patches changed loaded rows without inserting out-of-page rows', () => {
-    const current = fromProjection(projection([position(2), position(3)]));
+    const { page, ...session } = projection([position(2), position(3)]);
+    const current = fromProjection({ ...session, page });
     const change: SessionChange = {
-      ...current.session,
-      updatedAt: '2026-08-14T10:00:00.000Z',
+      ...session,
       positions: [position(3, 'changed'), position(9)],
     };
     const next = applyChange(current, change);
     expect(next.positions).toEqual([position(2), position(3, 'changed')]);
-    expect(next.session.updatedAt).toBe('2026-08-14T10:00:00.000Z');
   });
 
   it('reopens at the fresh tail when background turns leave a gap, then pages through all history', () => {

@@ -6,7 +6,8 @@ import {
   type BotCapability,
 } from '@simplebot/shared';
 
-import type { AppConfig, AuthoredFiles } from './authored.js';
+import type { AppConfig } from '@simplebot/shared';
+import type { AuthoredFiles } from './authored.js';
 import {
   activateDocker,
   type DockerLimits,

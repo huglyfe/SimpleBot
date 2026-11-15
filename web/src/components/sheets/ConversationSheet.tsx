@@ -77,6 +77,7 @@ function LeafRow({
       action={
         <IconButton
           label={`Regenerate summary · ${title}`}
+          warning
           disabled={regenerating !== null}
           onClick={() => onRegenerate(leaf.id)}
         >
@@ -157,6 +158,12 @@ function ContextPanel({
               {usage === null
                 ? 'Usage unavailable'
                 : `${promptTokenCount(usage).toLocaleString()} input · ${usage.output.toLocaleString()} output`}
+            </dd>
+          </div>
+          <div>
+            <dt>Compacts at</dt>
+            <dd>
+              {context.compactionThresholdTokens.toLocaleString()} prompt tokens
             </dd>
           </div>
           {usage === null ? null : (

@@ -67,7 +67,7 @@ export async function createBackup(
       files: await describeFiles(payload),
       external: [
         'environment credentials',
-        'saved secrets (re-enter after restore)',
+        'private values (re-enter after restore)',
         'custom TLS paths',
         'Docker containers',
         'provider data',

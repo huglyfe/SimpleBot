@@ -61,8 +61,9 @@
   margin: calc(var(--header-height) + var(--space-sm)) var(--space-md) 0;
 }
 
-/* Floating glass pills over the transcript. The bar itself is transparent and
-   lets pointer input through to the transcript between the pills. */
+/* Floating glass over the transcript: side pills, and the bot's portrait with
+   its name pill hanging below, centred. The bar itself is transparent and lets
+   pointer input through to the transcript between them. */
 .shell-header {
   position: sticky;
   top: 0;
@@ -70,11 +71,11 @@
   display: flex;
   height: var(--header-height);
   flex: none;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-sm);
   margin-bottom: calc(var(--header-height) * -1);
-  padding: 0 var(--space-md);
+  padding: var(--space-sm) var(--space-md) 0;
   pointer-events: none;
 }
 
@@ -84,7 +85,7 @@
 }
 
 .header-side:not(:empty),
-.bot-identity,
+.bot-identity-name,
 .header-center > strong {
   display: flex;
   align-items: center;
@@ -110,42 +111,48 @@
   margin-left: auto;
 }
 
-.bot-identity,
 .header-center > strong {
-  min-width: 0;
   min-height: calc(var(--touch-target) + 6px);
-  gap: var(--space-sm);
-  padding: 2px var(--space-md) 2px 4px;
-}
-
-.header-center > strong {
   padding-inline: var(--space-md);
 }
 
-.bot-identity:hover {
+.bot-identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--radius-card);
+}
+
+.bot-identity .ui-avatar {
+  box-shadow:
+    0 0 0 1px var(--border-subtle),
+    var(--shadow-pop);
+}
+
+/* Overlaps the portrait's lower edge, as a caption tab. */
+.bot-identity-name {
+  position: relative;
+  max-width: 100%;
+  margin-top: calc(var(--space-xs) * -1.5);
+  padding: 1px var(--space-sm);
+  font-size: var(--text-body);
+}
+
+.bot-identity:hover .bot-identity-name {
   background: var(--surface-hover);
 }
 
-.bot-identity strong,
-.bot-identity-preset {
+.bot-identity-name strong {
   overflow: hidden;
+  font-weight: var(--weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.bot-identity strong {
-  font-weight: var(--weight-medium);
-}
-
-.bot-identity-preset {
-  color: var(--text-muted);
-  font-size: var(--text-label);
-}
-
-.bot-identity-preset::before {
-  margin-right: var(--space-sm);
-  color: var(--text-faint);
-  content: '·';
+/* At the compaction threshold: the next accepted response compacts. */
+.context-ring.is-full {
+  color: var(--accent);
 }
 
 /* Drawer */
@@ -405,10 +412,6 @@
 
 @media (max-width: 800px) {
   .shell-header {
-    padding: 0 var(--space-sm);
-  }
-
-  .bot-identity-preset {
-    display: none;
+    padding-inline: var(--space-sm);
   }
 }

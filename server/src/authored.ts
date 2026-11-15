@@ -21,47 +21,36 @@ import { join } from 'node:path';
 import { z } from 'zod';
 
 import {
-  appConfigSchema,
-  cardSchema,
-  dependencyConfigSchema,
   parseAuthored,
   parseAuthoredJson,
-  presetSchema,
   AuthoredConflictError,
   AuthoredValidationError,
   MAX_BOT_PNG_BYTES,
-  type AppConfig,
   type AuthoredAttempt,
-  type DependencyConfigDraft,
-  slug,
 } from './authored-schemas.js';
 import {
+  appConfigSchema,
+  cardSchema,
+  dependencyConfigSchema,
+  presetSchema,
+  slug,
+  type AppConfig,
+  type DependencyConfigDraft,
   botSettings,
   botGreetings,
   cardSourceSchema,
+  hasPrivateInput,
   type BotDocument,
   type BotSource,
 } from '@simplebot/shared';
 import { parsePng, parseEmbeddedCard } from './card-png.js';
+import { PrivateValues } from './secrets.js';
 
-// The schemas define what these files may contain; callers reach both through
-// this module, which is the only thing that reads and writes them.
-export {
-  AuthoredConflictError,
-  AuthoredValidationError,
-  MAX_BOT_PNG_BYTES,
-} from './authored-schemas.js';
-export { mcpDefinitionSchema } from './authored-schemas.js';
-export type {
-  AppConfig,
-  AuthoredAttempt,
-  Card,
-  BotCapability,
-  BotSettings,
-  DependencyConfigDraft,
-  McpDefinition,
-  Preset,
-} from './authored-schemas.js';
+/** Write-only private input is a request shape; it never belongs on disk. */
+const storedConfigSchema = appConfigSchema.refine(
+  (config) => !hasPrivateInput(config),
+  'private values must be entered in settings, not written into config.json',
+);
 
 export class AuthoredFiles {
   readonly #root: string;
@@ -71,7 +60,7 @@ export class AuthoredFiles {
   }
 
   async validateRequired(): Promise<AppConfig> {
-    return this.#readRequired('config.json', appConfigSchema);
+    return this.#readRequired('config.json', storedConfigSchema);
   }
 
   async resolveSessionPreset(
@@ -92,7 +81,7 @@ export class AuthoredFiles {
   }
 
   async readApplication(): Promise<AppConfig['application']> {
-    return (await this.#readRequired('config.json', appConfigSchema))
+    return (await this.#readRequired('config.json', storedConfigSchema))
       .application;
   }
 
@@ -369,7 +358,7 @@ export class AuthoredFiles {
     return {
       value: parseAuthored(
         'config.json',
-        appConfigSchema,
+        storedConfigSchema,
         parseAuthoredJson('config.json', source),
       ),
       revision: revisionOf(source),
@@ -383,7 +372,7 @@ export class AuthoredFiles {
       throw new AuthoredConflictError('Configuration changed on disk');
     const prior = parseAuthored(
       'config.json',
-      appConfigSchema,
+      storedConfigSchema,
       parseAuthoredJson('config.json', current),
     );
     const candidate = parseAuthored('config.json', appConfigSchema, value);
@@ -391,7 +380,10 @@ export class AuthoredFiles {
       if (!(provider in candidate.providers))
         this.#assertProviderUnused(provider);
     }
-    return publishDocument(path, candidate);
+    return publishDocument(
+      path,
+      new PrivateValues(this.#root).admit(prior, candidate),
+    );
   }
 
   async readDependencyConfig(): Promise<{
@@ -526,7 +518,7 @@ export class AuthoredFiles {
   async readSessionSettings(presetSlug: string) {
     slug.parse(presetSlug);
     const [config, preset] = await Promise.all([
-      this.#readRequired('config.json', appConfigSchema),
+      this.#readRequired('config.json', storedConfigSchema),
       this.#readRequired(join('presets', `${presetSlug}.json`), presetSchema),
     ]);
     return { config, preset };

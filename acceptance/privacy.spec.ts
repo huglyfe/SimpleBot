@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function settings(page: Page) {
   await expect(page.locator('.shell-root')).toBeVisible();
+  // The shell is mounted; this check distinguishes an open drawer from a closed one.
   const open = page.getByRole('button', { name: 'Open conversations' });
   if (await open.isVisible()) await open.click();
   await page.getByRole('button', { name: 'Application settings' }).click();
@@ -224,7 +225,7 @@ test('background read failures wait behind the privacy lock', async ({
     'Refresh failed while locked',
   );
   await page.unroute('**/api/bootstrap');
-  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 });
 

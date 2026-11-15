@@ -9,7 +9,10 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 
 import { authCookies, readAuthCookie } from './auth.js';
-import { AuthoredConflictError, AuthoredValidationError } from './authored.js';
+import {
+  AuthoredConflictError,
+  AuthoredValidationError,
+} from './authored-schemas.js';
 import { registerAttemptRoutes } from './routes/attempts.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerAuthoredRoutes } from './routes/authored.js';

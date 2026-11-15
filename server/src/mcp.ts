@@ -6,10 +6,10 @@ import {
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { resolve } from 'node:path';
 
-import { PRODUCT_SLUG } from '@simplebot/shared';
+import { PRODUCT_SLUG, type ServerValue } from '@simplebot/shared';
 
-import type { McpDefinition } from './authored.js';
-import { resolveCredential } from './credentials.js';
+import type { McpDefinition } from '@simplebot/shared';
+import { resolveValue } from './credentials.js';
 import { VERSION } from './root.js';
 
 const MCP_TIMEOUT_MS = 30_000;
@@ -212,13 +212,13 @@ function transport(definition: McpDefinition, root: string) {
 }
 
 function resolveRecord(
-  source: Record<string, string>,
+  source: Record<string, ServerValue>,
   root: string,
 ): Record<string, string> {
   return Object.fromEntries(
     Object.entries(source).map(([name, value]) => [
       name,
-      resolveCredential(value, 'MCP', process.env, root) ?? value,
+      resolveValue(value, `MCP ${name}`, root),
     ]),
   );
 }

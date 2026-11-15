@@ -124,6 +124,12 @@ export class AttemptManager {
     return true;
   }
 
+  /** Stops a deleted session's queued and running attempts. */
+  cancelSession(sessionId: string): void {
+    for (const attempt of this.#attempts.values())
+      if (attempt.sessionId === sessionId) this.cancel(sessionId, attempt.id);
+  }
+
   async acceptPosition(sessionId: string, positionId: string): Promise<void> {
     await this.#enqueueEffect({ kind: 'accept', sessionId, positionId });
   }
@@ -226,26 +232,18 @@ export class AttemptManager {
         generation.source.trim() === 'no_response'
       )
         generation.source = NO_RESPONSE;
-      this.#completeAdmitted(attempt, generation);
-      this.#settle(attempt, { type: 'completed', ...admitted });
     } catch (error) {
-      if (attempt.admitted === null) {
-        this.#settle(attempt);
-        return;
-      }
       generation.source = appendSystemError(
         generation.source,
         signal.aborted
           ? 'Generation stopped by operator.'
           : errorMessage(error),
       );
-      try {
-        this.#completeAdmitted(attempt, generation);
-        this.#settle(attempt, { type: 'completed', ...attempt.admitted });
-      } catch {
-        this.#settle(attempt);
-      }
     } finally {
+      // Settle before the cleanup below, which may throw. Work that never
+      // reached admission leaves no response.
+      if (attempt.admitted === null) this.#settle(attempt);
+      else this.#complete(attempt, attempt.admitted, generation);
       if (attempt.command.kind === 'reply')
         await this.#options.storage.discardUnboundAttachments(
           attempt.sessionId,
@@ -254,20 +252,35 @@ export class AttemptManager {
     }
   }
 
-  #completeAdmitted(attempt: Attempt, generation: Generation): void {
-    const admitted = attempt.admitted;
-    if (admitted === null) throw new Error('Attempt was not admitted');
-    this.#options.storage.finalizeVariant({
-      sessionId: attempt.sessionId,
-      ...admitted,
-      source: generation.source,
-      trace: generation.trace,
-      usages: generation.usages,
-      provider: generation.provider,
-      model: generation.model,
-      effects: generation.effects,
-      completedAt: this.#now().toISOString(),
-    });
+  /**
+   * Saves the admitted response once. A failed save is reported, not retried:
+   * the response stays empty and startup marks it interrupted.
+   */
+  #complete(
+    attempt: Attempt,
+    admitted: NonNullable<Attempt['admitted']>,
+    generation: Generation,
+  ): void {
+    try {
+      this.#options.storage.finalizeVariant({
+        sessionId: attempt.sessionId,
+        ...admitted,
+        source: generation.source,
+        trace: generation.trace,
+        usages: generation.usages,
+        provider: generation.provider,
+        model: generation.model,
+        effects: generation.effects,
+        completedAt: this.#now().toISOString(),
+      });
+    } catch (error) {
+      this.#settle(attempt);
+      console.error(
+        `Could not save the response in session ${attempt.sessionId}: ${errorMessage(error)}`,
+      );
+      return;
+    }
+    this.#settle(attempt, { type: 'completed', ...admitted });
   }
 
   #settle(attempt: Attempt, event?: LiveAttemptEvent): void {

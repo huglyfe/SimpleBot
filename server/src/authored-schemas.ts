@@ -1,28 +1,12 @@
 /** Raw card/config schemas and file-specific validation failures. */
 import { z } from 'zod';
-import { type AppConfig, type Preset } from '@simplebot/shared';
-export {
-  appConfigSchema,
-  dependencyConfigSchema,
-  mcpDefinitionSchema,
-  presetSchema,
-  slug,
-  credential,
-  type AppConfig,
-  type Preset,
-  type BotCapability,
-  type DependencyConfigDraft,
-  type McpDefinition,
-} from '@simplebot/shared';
-
-export { cardSchema, botSettingsSchema } from '@simplebot/shared';
-export type { Card, BotSettings } from '@simplebot/shared';
+import type { AppConfig, BotSettings, Card, Preset } from '@simplebot/shared';
 
 export interface AuthoredAttempt {
   config: AppConfig;
-  writing: import('@simplebot/shared').Card;
+  writing: Card;
   preset: Preset;
-  bot: import('@simplebot/shared').BotSettings;
+  bot: BotSettings;
 }
 
 export class AuthoredConflictError extends Error {}

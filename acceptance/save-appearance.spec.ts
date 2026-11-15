@@ -12,11 +12,6 @@ for (const surface of ['Bot', 'Preset']) {
     const botName = `Save appearance ${surface} ${testInfo.project.name}`;
     await page.goto('/');
     await page.getByRole('banner').waitFor();
-    const drawer = page.getByRole('button', {
-      name: 'Open conversations',
-      exact: true,
-    });
-    if (await drawer.isVisible()) await drawer.click();
     await page.getByRole('button', { name: 'New bot', exact: true }).click();
     const create = page.getByRole('dialog', { name: 'New bot', exact: true });
     await create.getByLabel('Bot name').fill(botName);
@@ -27,7 +22,6 @@ for (const surface of ['Bot', 'Preset']) {
       await page
         .getByRole('button', { name: 'Close panel', exact: true })
         .click();
-      if (await drawer.isVisible()) await drawer.click();
       await page
         .getByRole('button', {
           name: `New conversation with ${botName}`,
@@ -74,9 +68,7 @@ for (const surface of ['Bot', 'Preset']) {
       await expect(fields).toHaveAttribute('inert', '');
       expect(await appearance()).toEqual(before);
       await name.evaluate((element) => element.focus());
-      await expect(
-        panel.getByRole('button', { name: 'Close panel', exact: true }),
-      ).toBeFocused();
+      await expect(panel).toBeFocused();
       const bounds = await rowElement.boundingBox();
       if (!bounds) throw new Error('Description row has no bounds');
       await page.mouse.click(
@@ -86,9 +78,11 @@ for (const surface of ['Bot', 'Preset']) {
       await expect(
         page.getByRole('dialog', { name: 'Edit Description', exact: true }),
       ).toHaveCount(0);
-      await panel
-        .getByRole('button', { name: 'Close panel', exact: true })
-        .click();
+      await expect(
+        panel.getByRole('button', { name: 'Close panel', exact: true }),
+      ).toBeDisabled();
+      await page.keyboard.press('Enter');
+      await page.keyboard.press('Escape');
       await expect(panel).toBeVisible();
       pending.resolve(undefined);
       await expect(fields).not.toHaveAttribute('inert');

@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { createTestFixture } from '../server/src/test-helper.js';
 
-test('a second build waits for explicit update, preserves a deferred draft, and replaces only its own shell cache', async ({
+test('a second build takes over an open page automatically and replaces only its own shell cache', async ({
   page,
   context,
 }) => {
@@ -21,6 +21,9 @@ test('a second build waits for explicit update, preserves a deferred draft, and 
       host: '127.0.0.1',
       port: 0,
     });
+    // The first install takes control of the fresh page without reloading it.
+    let loads = 0;
+    page.on('load', () => (loads += 1));
     await page.goto(url);
     await expect(page).toHaveTitle('SimpleBot');
     await page.evaluate(async () => {
@@ -32,9 +35,6 @@ test('a second build waits for explicit update, preserves a deferred draft, and 
         page.evaluate(() => navigator.serviceWorker.controller !== null),
       )
       .toBe(true);
-    await expect(
-      page.getByRole('alertdialog', { name: 'Update available' }),
-    ).toHaveCount(0);
     const cdp = await context.newCDPSession(page);
     const installability: unknown = await cdp.send(
       'Page.getInstallabilityErrors',
@@ -45,7 +45,8 @@ test('a second build waits for explicit update, preserves a deferred draft, and 
       .getByRole('button', { name: 'New conversation with Echo' })
       .click();
     const message = page.getByRole('textbox', { name: 'Message', exact: true });
-    await message.fill('Keep this draft until I choose to update');
+    expect(loads).toBe(1);
+    await message.fill('An open page reloads onto the new build');
     const oldCaches = await page.evaluate(() => caches.keys());
 
     // Build a real second release into the isolated server's static root.
@@ -75,27 +76,10 @@ export default (env) => {
       ],
       { cwd: resolve('web') },
     );
-    await page.evaluate(async () => {
-      await (await navigator.serviceWorker.ready).update();
-    });
-    await expect(page.getByRole('alertdialog')).toContainText('Unsent drafts');
-    await page.getByRole('button', { name: 'Later', exact: true }).click();
-    await expect(message).toHaveValue(
-      'Keep this draft until I choose to update',
-    );
-    await expect(page).toHaveTitle('SimpleBot');
-    await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    await message.fill('Still able to finish my draft');
-    await page.evaluate(async () => {
-      await (await navigator.serviceWorker.ready).update();
-    });
-    await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    await page.reload();
-    await expect(
-      page.getByRole('alertdialog', { name: 'Update available' }),
-    ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole('button', { name: 'Update and reload' }).click();
+    await page.evaluate(async () => {
+      await (await navigator.serviceWorker.ready).update();
+    });
     await expect(page).toHaveTitle('SimpleBot updated');
     await expect(message).toHaveValue('');
     const newCaches = await page.evaluate(() => caches.keys());

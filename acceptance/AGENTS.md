@@ -18,7 +18,7 @@ This tree owns black-box Playwright journeys against one production-shaped Fasti
 - Pairing, session creation, streaming, swipe-as-retry, locking, and editing.
 - Session-owned compaction entering context immediately, **Compact now** leaving the current response swipable, acceptance-triggered compaction without response flags or compaction effects, crash fallback without retry, and two-FIFO ordering.
 - Search/read across active and evicted leaves.
-- Authored next-attempt reads, one desired-capability list, standalone Skills and root MCP definitions, global external-dependency save/restart, the separate Memory panel's on-demand health and selection path, lazy optional UI surfaces, images, and model-capability changes.
+- Authored next-attempt reads, one desired-capability list, standalone Skills and root MCP definitions, global external-dependency save/restart, Memory configured in Capabilities and selected in Bot, lazy optional UI surfaces, images, and model-capability changes.
 - Effects, variables, cron, memory, TTS, and Docker through their real visible boundaries.
 - Desktop and phone keyboard, focus, touch, and non-hover paths.
 

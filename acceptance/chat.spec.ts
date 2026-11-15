@@ -608,7 +608,7 @@ test('a failed refresh retains the loaded conversation and composer', async ({
   );
   await page.unroute('**/api/bootstrap');
   await page.unroute('**/api/sessions/*');
-  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page.getByRole('button', { name: 'Reload', exact: true }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
   await expect(page.locator('.msg-row.is-user').last()).toContainText(
     'Another response.',

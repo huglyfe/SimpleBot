@@ -30,7 +30,7 @@ acceptance/polish.spec.ts
 acceptance/privacy.spec.ts
 acceptance/pwa.spec.ts
 acceptance/save-appearance.spec.ts
-acceptance/secrets.spec.ts
+acceptance/private-values.spec.ts
 acceptance/settings.spec.ts
 acceptance/todos.spec.ts
 acceptance/trace.spec.ts
@@ -240,8 +240,8 @@ web/src/components/sheets/RecordEditor.test.tsx
 web/src/components/sheets/RecordEditor.tsx
 web/src/components/sheets/SchedulesPanel.test.tsx
 web/src/components/sheets/SchedulesPanel.tsx
-web/src/components/sheets/Secrets.test.tsx
-web/src/components/sheets/Secrets.tsx
+web/src/components/sheets/ValueField.test.tsx
+web/src/components/sheets/ValueField.tsx
 web/src/components/sheets/Section.tsx
 web/src/components/sheets/ServerFields.tsx
 web/src/components/sheets/SettingsPanel.test.tsx
@@ -285,8 +285,8 @@ web/src/lib/useMediaQuery.ts
 web/src/main.tsx
 web/src/privacy.test.tsx
 web/src/privacy.tsx
-web/src/pwa.test.tsx
-web/src/pwa.tsx
+web/src/pwa.test.ts
+web/src/pwa.ts
 web/src/styles/app.css
 web/src/styles/base.css
 web/src/styles/composer.css

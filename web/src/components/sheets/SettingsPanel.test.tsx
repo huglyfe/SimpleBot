@@ -28,7 +28,6 @@ const api = vi.hoisted(() => ({
 
 vi.mock('../../api.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../api.js')>()),
-  getSecrets: async () => ({ names: [], revision: 'empty' }),
   ...api,
 }));
 
@@ -330,6 +329,22 @@ it('preset-switch Save rejects a native-invalid draft before making a write', as
     'valid values',
   );
   expect(api.saveAuthoredDocument).not.toHaveBeenCalled();
+});
+
+it('refreshes Context after saving a compaction threshold', async () => {
+  const user = userEvent.setup();
+  const client = renderPanel({ section: 'preset' }, SESSION);
+  const invalidate = vi.spyOn(client, 'invalidateQueries');
+  const threshold = await screen.findByLabelText(
+    'Compaction threshold (tokens)',
+  );
+  await user.clear(threshold);
+  await user.type(threshold, '5000');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  await waitFor(() =>
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['context'] }),
+  );
 });
 
 it('finishes a provider save and adopts its revision while list refreshes are pending', async () => {

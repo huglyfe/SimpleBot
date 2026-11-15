@@ -346,11 +346,13 @@ it('saves rapid inline edits together, preserves failure, and blocks changes dur
   await user.tab();
   expect(save).not.toHaveBeenCalled();
   await user.click(screen.getByRole('button', { name: 'Save' }));
-  expect(screen.getByRole('button', { name: 'Close panel' })).toHaveFocus();
+  expect(screen.getByRole('button', { name: 'Close panel' })).toBeDisabled();
+  expect(screen.getByRole('dialog', { name: 'Preset settings' })).toHaveFocus();
   expect(screen.getByLabelText('Name').closest('fieldset')).toHaveAttribute(
     'inert',
   );
   await act(async () => pending.reject(new Error('Disk unavailable')));
+  expect(screen.getByRole('button', { name: 'Close panel' })).toHaveFocus();
   expect(screen.getByRole('alert')).toHaveTextContent('Disk unavailable');
   expect(screen.getByLabelText('Main reasoning effort')).toHaveValue('high');
   expect(screen.getByLabelText('Name')).toHaveValue('Draft persona');

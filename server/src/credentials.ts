@@ -1,30 +1,32 @@
-import type { AppConfig } from './authored-schemas.js';
-import { SecretStore } from './secrets.js';
+import type { ServerValue } from '@simplebot/shared';
+import type { AppConfig } from '@simplebot/shared';
+import { PrivateValues } from './secrets.js';
 
 const REFERENCE = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/u;
 
-export function resolveCredential(
-  source: string | undefined,
+/**
+ * Resolve a saved value: plain text, an exact `${NAME}` environment reference,
+ * or a private value. Missing sources never fall back to each other.
+ */
+export function resolveValue(
+  source: ServerValue,
   label: string,
+  root: string,
   environment: NodeJS.ProcessEnv = process.env,
-  root?: string,
-): string | undefined {
-  if (source === undefined) return undefined;
-  if (source.startsWith('secret:')) {
-    const value =
-      root === undefined
-        ? undefined
-        : new SecretStore(root).resolve(source.slice(7));
+): string {
+  if (typeof source !== 'string') {
+    if (!('private' in source))
+      throw new Error(`${label} private value was not saved`);
+    const value = new PrivateValues(root).resolve(source.private);
     if (value === undefined)
-      throw new Error(`${label} saved secret is unavailable`);
+      throw new Error(`${label} private value is not set; enter it again`);
     return value;
   }
   const name = REFERENCE.exec(source)?.[1];
-  if (name === undefined)
-    throw new Error(`${label} must be an environment reference`);
+  if (name === undefined) return source;
   const value = environment[name];
   if (value === undefined || value === '')
-    throw new Error(`${label} credential reference is unavailable`);
+    throw new Error(`${label} environment variable ${name} is unavailable`);
   return value;
 }
 
@@ -32,16 +34,18 @@ export function resolveCredential(
 export function providerConnection(
   config: AppConfig['providers'][string],
   provider: string,
-  root?: string,
+  root: string,
 ) {
-  const apiKey = resolveCredential(
-    config.apiKey,
-    `Provider ${JSON.stringify(provider)}`,
-    process.env,
-    root,
-  );
   return {
-    ...(apiKey === undefined ? {} : { apiKey }),
+    ...(config.apiKey === undefined
+      ? {}
+      : {
+          apiKey: resolveValue(
+            config.apiKey,
+            `Provider ${JSON.stringify(provider)}`,
+            root,
+          ),
+        }),
     ...(config.baseUrl === undefined ? {} : { baseUrl: config.baseUrl }),
   };
 }

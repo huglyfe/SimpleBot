@@ -75,11 +75,34 @@ export const DotsIcon = (props: IconProps) => (
     <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
   </Icon>
 );
-export const SlidersIcon = (props: IconProps) => (
+export const TuneIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
-    <circle cx="16" cy="7" r="2" />
-    <circle cx="8" cy="17" r="2" />
+    <path d="M6 4v6M6 14v6M12 4v2M12 10v10M18 4v10M18 18v2" />
+    <circle cx="6" cy="12" r="2" />
+    <circle cx="12" cy="8" r="2" />
+    <circle cx="18" cy="16" r="2" />
+  </Icon>
+);
+/** A 270° gauge, open at the bottom, as one path so track and fill coincide. */
+const GAUGE_ARC = 'M6.34 17.66A8 8 0 1 1 17.66 17.66';
+/**
+ * Fills clockwise from the lower left. `progress` is the share of the
+ * compaction threshold already used, clamped to 0..1; null when the provider
+ * reported no usage, which leaves only the track.
+ */
+export const ContextRingIcon = ({
+  progress,
+  ...props
+}: IconProps & { progress: number | null }) => (
+  <Icon {...props}>
+    <path d={GAUGE_ARC} opacity="0.3" />
+    {progress === null || progress <= 0 ? null : (
+      <path
+        d={GAUGE_ARC}
+        pathLength={100}
+        strokeDasharray={`${String(Math.min(progress, 1) * 100)} 100`}
+      />
+    )}
   </Icon>
 );
 /**
@@ -172,10 +195,5 @@ export const BrainIcon = (props: IconProps) => (
 export const WrenchIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M15 4a5 5 0 0 0-4.6 7L4 17.4 6.6 20l6.4-6.4A5 5 0 0 0 20 9l-3 1-2-2Z" />
-  </Icon>
-);
-export const MessageIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4Z" />
   </Icon>
 );

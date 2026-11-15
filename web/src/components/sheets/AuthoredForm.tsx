@@ -50,7 +50,6 @@ export function AuthoredForm({
         event.preventDefault();
         event.stopPropagation();
         if (disabled || !changed) return;
-        focusClose();
         void onSave().catch(() => undefined);
       }}
     >

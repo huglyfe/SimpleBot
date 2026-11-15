@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import {
+  dateTimeFormat,
   formatClockTime,
   localDateTime,
   type Bootstrap,
@@ -33,7 +34,7 @@ export function conversationDateKey(iso: string, timezone: string): string {
 export function formatConversationDate(iso: string, timezone: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat(undefined, {
+  return dateTimeFormat(undefined, {
     timeZone: timezone,
     weekday: 'long',
     month: 'long',
@@ -83,7 +84,7 @@ export function formatRelative(
   if (minutes < 60) return `${String(minutes)}m`;
   if (minutes < 1440) return `${String(Math.floor(minutes / 60))}h`;
   if (minutes < 10_080) return `${String(Math.floor(minutes / 1440))}d`;
-  return new Intl.DateTimeFormat(undefined, {
+  return dateTimeFormat(undefined, {
     timeZone: timezone,
     month: 'short',
     day: 'numeric',

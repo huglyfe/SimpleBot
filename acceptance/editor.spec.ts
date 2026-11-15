@@ -40,8 +40,9 @@ test('pending record saves contain focus, preserve failures, and restore focus a
       editor.getByRole('button', { name: 'Saving…' }),
     ).toBeDisabled();
     const close = editor.getByRole('button', { name: 'Discard' });
-    await expect(close).toBeFocused();
-    await close.click();
+    await expect(editor).toBeFocused();
+    await expect(close).toBeDisabled();
+    await page.keyboard.press('Enter');
     await page.keyboard.press('Escape');
     await page.keyboard.press('Tab');
     // Native dialogs allow browser chrome, but never background app controls.
@@ -53,9 +54,12 @@ test('pending record saves contain focus, preserve failures, and restore focus a
       ),
     ).toBe(true);
     await page.keyboard.press('Shift+Tab');
-    await expect(close).toBeFocused();
     expect(
-      await editor.evaluate((node) => node.contains(document.activeElement)),
+      await editor.evaluate(
+        (node) =>
+          document.activeElement === document.body ||
+          node.contains(document.activeElement),
+      ),
     ).toBe(true);
   } finally {
     release.resolve(undefined);
@@ -109,8 +113,11 @@ test('connection entry rows save on Enter and cancel with X', async ({
   await editor.getByRole('button', { name: 'Add environment entry' }).click();
   await editor.getByLabel('Environment name 1').fill('REVIEW_KEY');
   await editor
+    .getByLabel('Environment value 1 source')
+    .selectOption('environment');
+  await editor
     .getByLabel('Environment value 1', { exact: true })
-    .fill('${REVIEW_KEY}');
+    .fill('REVIEW_KEY');
   await editor
     .getByLabel('Environment value 1', { exact: true })
     .press('Enter');
@@ -121,9 +128,12 @@ test('connection entry rows save on Enter and cancel with X', async ({
   await expect(editor.getByLabel('Environment name 1')).toHaveValue(
     'REVIEW_KEY',
   );
+  await expect(editor.getByLabel('Environment value 1 source')).toHaveValue(
+    'environment',
+  );
   await expect(
     editor.getByLabel('Environment value 1', { exact: true }),
-  ).toHaveValue('${REVIEW_KEY}');
+  ).toHaveValue('REVIEW_KEY');
 });
 
 test('phone connection editors fit the viewport and confirm deletion', async ({

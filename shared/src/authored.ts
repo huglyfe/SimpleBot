@@ -10,27 +10,39 @@ export const SPEECH_DEFAULTS = {
   timeoutMs: 60_000,
 };
 
-export const credential = z
+export const environmentReference = z
   .string()
   .regex(
-    /^(?:\$\{[A-Za-z_][A-Za-z0-9_]*\}|secret:(?!__proto__$)[A-Za-z_][A-Za-z0-9_]{0,127})$/u,
-    'must be an exact ${NAME} or secret:NAME reference',
+    /^\$\{[A-Za-z_][A-Za-z0-9_]*\}$/u,
+    'must be an exact ${NAME} reference',
   );
 
-export const secretNameSchema = z
-  .string()
-  .regex(/^(?!__proto__$)[A-Za-z_][A-Za-z0-9_]{0,127}$/u);
-export const secretListSchema = z.strictObject({
-  names: z.array(secretNameSchema),
-  revision: z.string(),
+/** A saved private value: config holds only its opaque ID. */
+export const privateReference = z.strictObject({
+  private: z.string().regex(/^[a-f0-9]{32}$/u),
 });
-export const secretWriteSchema = z.strictObject({
+
+/** A write-only private value; the server stores it and saves a reference. */
+export const privateInput = z.strictObject({
   value: z.string().min(1).max(16_384),
-  expectedRevision: z.string(),
 });
-export const secretDeleteSchema = z.strictObject({
-  expectedRevision: z.string(),
-});
+
+/** API keys: never plain text. */
+export const credential = z.union([
+  environmentReference,
+  privateReference,
+  privateInput,
+]);
+
+/** MCP env and header values: plain text, an exact ${NAME}, or private. */
+export const serverValue = z.union([
+  z.string(),
+  privateReference,
+  privateInput,
+]);
+
+export type ServerValue = z.infer<typeof serverValue>;
+
 const httpUrl = z.url().refine((value) => {
   const protocol = new URL(value).protocol;
   return protocol === 'http:' || protocol === 'https:';
@@ -45,14 +57,14 @@ const stdioMcpSchema = z.strictObject({
   type: z.literal('stdio'),
   command: z.string().min(1),
   args: z.array(z.string()).default([]),
-  env: z.record(z.string(), credential).default({}),
+  env: z.record(z.string(), serverValue).default({}),
   cwd: z.string().min(1).optional(),
 });
 
 const httpMcpSchema = z.strictObject({
   type: z.literal('streamable-http'),
   url: httpUrl,
-  headers: z.record(z.string(), credential).default({}),
+  headers: z.record(z.string(), serverValue).default({}),
 });
 
 export const mcpDefinitionSchema = z.discriminatedUnion('type', [
@@ -204,6 +216,61 @@ export const presetSchema = z.discriminatedUnion('useMainModelForSummary', [
 ]);
 
 export type AppConfig = z.infer<typeof appConfigSchema>;
+
+/**
+ * Apply `map` to every credential or server value in a config. API keys are a
+ * subset of server values, and `map` must keep them references or inputs.
+ */
+export function mapServerValues(
+  config: AppConfig,
+  map: (value: ServerValue) => ServerValue,
+): AppConfig {
+  const servers = (record: AppConfig['mcpServers']) =>
+    Object.fromEntries(
+      Object.entries(record).map(([name, server]) => [
+        name,
+        server.type === 'stdio'
+          ? { ...server, env: mapRecord(server.env, map) }
+          : { ...server, headers: mapRecord(server.headers, map) },
+      ]),
+    );
+  return {
+    ...config,
+    providers: Object.fromEntries(
+      Object.entries(config.providers).map(([id, provider]) => [
+        id,
+        provider.apiKey === undefined
+          ? provider
+          : { ...provider, apiKey: map(provider.apiKey) },
+      ]),
+    ),
+    tts:
+      config.tts === null
+        ? null
+        : { ...config.tts, apiKey: map(config.tts.apiKey) },
+    mcpServers: servers(config.mcpServers),
+    memoryServers: servers(config.memoryServers),
+  };
+}
+
+function mapRecord(
+  record: Record<string, ServerValue>,
+  map: (value: ServerValue) => ServerValue,
+): Record<string, ServerValue> {
+  return Object.fromEntries(
+    Object.entries(record).map(([name, value]) => [name, map(value)]),
+  );
+}
+
+/** True when a config carries write-only input that must never reach disk. */
+export function hasPrivateInput(config: AppConfig): boolean {
+  let found = false;
+  mapServerValues(config, (value) => {
+    if (typeof value !== 'string' && 'value' in value) found = true;
+    return value;
+  });
+  return found;
+}
 export type DependencyConfigDraft = Pick<
   AppConfig,
   'mcpServers' | 'memoryServers' | 'dockerContainers'

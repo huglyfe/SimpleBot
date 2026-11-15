@@ -21,7 +21,6 @@ const { getProviderList, getProviderModels } = vi.hoisted(() => ({
 vi.mock('../../api.js', () => ({
   getProviderList,
   getProviderModels,
-  getSecrets: async () => ({ names: [], revision: 'empty' }),
 }));
 
 function renderSheet(value: Record<string, unknown>) {
@@ -101,7 +100,7 @@ describe('ProviderSheet', () => {
     expect(item).toHaveTextContent('Network unavailable');
   });
 
-  it('displays exact environment references without resolving secrets', async () => {
+  it('displays environment variable names without resolving them', async () => {
     renderSheet({
       providers: { openrouter: { apiKey: '${OPENROUTER_API_KEY}' } },
       tts: null,
@@ -110,10 +109,8 @@ describe('ProviderSheet', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Edit openrouter' }),
     );
-    expect(
-      await screen.findByDisplayValue('${OPENROUTER_API_KEY}'),
-    ).toBeVisible();
-    expect(screen.queryByText('Use ${NAME}')).not.toBeInTheDocument();
+    expect(await screen.findByDisplayValue('OPENROUTER_API_KEY')).toBeVisible();
+    expect(screen.getByLabelText('API key source')).toHaveValue('environment');
   });
 
   it('adds another configured provider without replacing existing entries', async () => {
@@ -145,7 +142,7 @@ describe('ProviderSheet', () => {
       screen.getByRole('button', { name: 'Add speech connection' }),
     );
     expect(await screen.findByLabelText('Base URL')).toHaveValue('');
-    expect(screen.getByLabelText('API key reference')).toHaveValue('');
+    expect(screen.getByLabelText('API key')).toHaveValue('');
     expect(screen.getByLabelText('Model')).toHaveValue('');
     expect(
       screen.queryByRole('button', { name: 'Configure speech' }),

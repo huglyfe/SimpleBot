@@ -1,11 +1,11 @@
 import type { ReactElement } from 'react';
-import type { McpDefinition } from '@simplebot/shared';
-import { CredentialField } from './Secrets.js';
+import type { McpDefinition, ServerValue } from '@simplebot/shared';
+import { ValueField } from './ValueField.js';
 import { Field } from '../primitives/Field.js';
 import { SegmentedControl } from '../primitives/SegmentedControl.js';
 
 export type ServerRole = 'mcp' | 'memory';
-export type Entries = [string, string][];
+export type Entries = [string, ServerValue][];
 export type ServerDraft =
   | (Omit<Extract<McpDefinition, { type: 'stdio' }>, 'env'> & { env: Entries })
   | (Omit<Extract<McpDefinition, { type: 'streamable-http' }>, 'headers'> & {
@@ -183,7 +183,8 @@ function StringMapEditor({
                 )
               }
             />
-            <CredentialField
+            <ValueField
+              plain
               label={`${label} value ${String(index + 1)}`}
               value={entryValue}
               onChange={(next) =>

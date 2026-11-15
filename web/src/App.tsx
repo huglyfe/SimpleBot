@@ -31,13 +31,12 @@ import { readStorage, writeStorage } from './lib/storage.js';
 
 const isConversationRead = (query: Pick<Query, 'queryKey'>) =>
   query.queryKey[0] === 'bootstrap' || query.queryKey[0] === 'session';
-const failedReads = {
-  type: 'active' as const,
-  predicate: (query: Query) =>
-    isConversationRead(query) && query.state.status === 'error',
-};
 
-/** The mounted app owns its cache; failed reads wait for an explicit action. */
+/**
+ * The mounted app owns its cache. A failed conversation read is reported once
+ * and recovers only through Reload, which also picks up a newer build. Close
+ * keeps a page that still has its data.
+ */
 export function App() {
   const [readError, setReadError] = useState<Error | null>(null);
   const [queryClient] = useState(
@@ -67,20 +66,20 @@ export function App() {
         <ConfirmDialog
           title="Unable to load"
           body={readError.message}
-          confirmLabel="Refresh"
+          confirmLabel="Reload"
           cancelLabel="Close"
           dismissible={
             !queryClient
               .getQueryCache()
-              .findAll(failedReads)
-              .some((query) => query.state.data === undefined)
+              .findAll({ type: 'active', predicate: isConversationRead })
+              .some(
+                (query) =>
+                  query.state.status === 'error' &&
+                  query.state.data === undefined,
+              )
           }
           onCancel={() => setReadError(null)}
-          onConfirm={async () => {
-            await queryClient.refetchQueries(failedReads);
-            const failure = queryClient.getQueryCache().findAll(failedReads)[0];
-            setReadError(failure?.state.error ?? null);
-          }}
+          onConfirm={() => window.location.reload()}
         />
       )}
     </QueryClientProvider>
@@ -98,6 +97,7 @@ function ChatApp() {
     readStorage(STORAGE_KEYS.session),
   );
   const [panel, setPanel] = useState<Panel | null>(null);
+  const [creatingConversation, setCreatingConversation] = useState(false);
   const [navigationError, setNavigationError] = useState<string | null>(null);
   const [deletion, setDeletion] = useState<{
     title: string;
@@ -115,24 +115,25 @@ function ChatApp() {
     writeStorage(STORAGE_KEYS.session, next);
   }, [activeId, data]);
 
-  /** One visible failure path for every navigation mutation. */
-  async function run(action: () => Promise<void>): Promise<void> {
-    setNavigationError(null);
-    try {
-      await action();
-    } catch (caught) {
-      setNavigationError(errorMessage(caught, 'That action failed.'));
-    }
-  }
-
   async function refresh() {
     await cache.invalidateQueries({ queryKey: ['bootstrap'] });
   }
 
-  async function startConversation(botSlug: string) {
-    const id = await createSession(botSlug);
-    await refresh();
-    setActiveId(id);
+  async function startConversation(botSlug: string): Promise<void> {
+    if (creatingConversation) return;
+    setCreatingConversation(true);
+    setNavigationError(null);
+    try {
+      const id = await createSession(botSlug);
+      await refresh();
+      setActiveId(id);
+    } catch (caught) {
+      setNavigationError(
+        errorMessage(caught, 'Could not create conversation.'),
+      );
+    } finally {
+      setCreatingConversation(false);
+    }
   }
 
   async function removeSession(id: string) {
@@ -184,7 +185,8 @@ function ChatApp() {
         activeSessionId={activeId}
         activeBotSlug={active?.botSlug}
         onSelectSession={setActiveId}
-        onNewConversation={(slug) => void run(() => startConversation(slug))}
+        onNewConversation={(slug) => void startConversation(slug)}
+        creatingConversation={creatingConversation}
         onRenameSession={async (id, title) => {
           await setTitle(id, title);
           await refresh();
@@ -239,7 +241,8 @@ function ChatApp() {
         {active === undefined ? (
           <Welcome
             bots={data.bots}
-            create={async (slug) => run(() => startConversation(slug))}
+            create={startConversation}
+            creating={creatingConversation}
           />
         ) : (
           /*
@@ -282,9 +285,11 @@ function ChatApp() {
 function Welcome({
   bots,
   create,
+  creating,
 }: {
   bots: Bootstrap['bots'];
   create: (slug: string) => Promise<void>;
+  creating: boolean;
 }) {
   return (
     <main className="welcome">
@@ -300,6 +305,7 @@ function Welcome({
           <button
             key={bot.slug}
             type="button"
+            disabled={creating}
             onClick={() => void create(bot.slug)}
           >
             <Avatar name={bot.name} artworkUrl={bot.avatarUrl} size={32} />

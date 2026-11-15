@@ -14,7 +14,7 @@ import {
   AuthoredConflictError,
   AuthoredValidationError,
   MAX_BOT_PNG_BYTES,
-} from '../authored.js';
+} from '../authored-schemas.js';
 import type { RouteContext } from './context.js';
 
 /**

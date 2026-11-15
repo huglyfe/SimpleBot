@@ -17,7 +17,7 @@ import Database from 'better-sqlite3';
 
 import { assembleAttempt } from './assemble.js';
 import { AuthoredFiles } from './authored.js';
-import { cardSchema, presetSchema } from './authored-schemas.js';
+import { cardSchema, presetSchema } from '@simplebot/shared';
 import { searchHistory } from './storage.js';
 import { compactSession, SUMMARY_CLIPPED } from './continuity.js';
 import { SCHEMA_VERSION } from './database.js';
@@ -87,15 +87,27 @@ function finish(
   });
 }
 
-/** One provider call that cost `total`; the token split does not matter here. */
-function spend(total: number): Usage {
+/**
+ * One provider call that cost `total`; the token split does not matter here.
+ * `fromProvider` marks a billed total, as pi-ai reports it, versus an estimate.
+ */
+function spend(total: number, fromProvider?: boolean): Usage {
   return {
     input: 1,
     output: 1,
     cacheRead: 0,
     cacheWrite: 0,
     totalTokens: 2,
-    cost: { input: total, output: 0, cacheRead: 0, cacheWrite: 0, total },
+    cost: {
+      input: total,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      total,
+      ...(fromProvider === undefined
+        ? {}
+        : { totalFromProvider: fromProvider }),
+    },
   };
 }
 
@@ -111,13 +123,18 @@ test('last swipe cost sums its provider calls and excludes discarded swipes', as
     variantId: randomUUID(),
     now,
   });
-  // The latest selected swipe owns the displayed cost.
-  finish(storage, sessionId, swipe, 'Hey', [spend(0.5), spend(0.25)]);
+  // The latest selected swipe owns the displayed cost. Billed and estimated
+  // totals both count, and the provider's flag must not break reading them.
+  finish(storage, sessionId, swipe, 'Hey', [
+    spend(0.5, true),
+    spend(0.25, false),
+  ]);
 
   assert.equal(
     storage.contextEvidence(sessionId, 100, 'UTC').lastSwipeCost,
     0.75,
   );
+  storage.acceptPosition(sessionId, first.positionId, now);
 });
 
 test('message cost distinguishes missing, partial, and reported zero usage', async (context) => {

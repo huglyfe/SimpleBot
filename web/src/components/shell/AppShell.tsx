@@ -21,6 +21,7 @@ export interface AppShellProps {
   activeBotSlug: string | undefined;
   onSelectSession: (id: string) => void;
   onNewConversation: (botSlug: string) => void;
+  creatingConversation?: boolean;
   onRenameSession: (id: string, title: string) => Promise<void>;
   onDeleteSession: (id: string) => void;
   onManageBot: (botSlug: string) => void;
@@ -90,6 +91,7 @@ export function AppShell({
       onClose={toggleDrawer}
       onSelectSession={dismissing(handlers.onSelectSession)}
       onNewConversation={dismissing(handlers.onNewConversation)}
+      creatingConversation={handlers.creatingConversation ?? false}
       onRenameSession={handlers.onRenameSession}
       onDeleteSession={handlers.onDeleteSession}
       onManageBot={handlers.onManageBot}
@@ -103,9 +105,6 @@ export function AppShell({
   );
 
   const bot = data.bots.find((item) => item.slug === activeBotSlug);
-  const presetSlug = data.sessions.find(
-    (session) => session.id === activeSessionId,
-  )?.presetSlug;
 
   return (
     <div className="shell-root">
@@ -132,8 +131,7 @@ export function AppShell({
       <div className="shell-main">
         <ConversationHeader
           bot={bot}
-          presetSlug={presetSlug}
-          conversationActive={activeSessionId !== null}
+          sessionId={activeSessionId}
           drawerOpen={drawerOpen}
           onToggleDrawer={toggleDrawer}
           onOpenBotSheet={handlers.onOpenBotSheet}

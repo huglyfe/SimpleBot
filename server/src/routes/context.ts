@@ -64,6 +64,7 @@ export function createRouteContext(
       const at = now();
       return {
         timezone: authored.config.application.timezone,
+        compactionThresholdTokens: authored.preset.context.thresholdTokens,
         ...dependencies.storage.contextEvidence(
           sessionId,
           authored.preset.context.activeLeafCap,

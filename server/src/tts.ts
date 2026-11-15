@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { hasSystemError } from '@simplebot/shared';
 
 import type { AuthoredFiles } from './authored.js';
-import { resolveCredential } from './credentials.js';
+import { resolveValue } from './credentials.js';
 import type { Storage } from './storage.js';
 
 export class Speech {
@@ -48,29 +48,24 @@ export class Speech {
     const key = `${createHash('sha256').update(identity).digest('hex')}.mp3`;
     const target = join(this.#directory, key);
     if (await exists(target)) return { key, cached: true };
-    // A local TTS server needs no key, and sending `Bearer undefined` would be
-    // a worse request than sending none.
-    const apiKey = resolveCredential(
-      connection.apiKey,
-      'TTS',
-      process.env,
-      this.#authored.root,
-    );
+    const apiKey = resolveValue(connection.apiKey, 'TTS', this.#authored.root);
     const response = await fetch(
       new URL('audio/speech', trailingSlash(connection.baseUrl)),
       {
         method: 'POST',
         headers: {
-          ...(apiKey === undefined
-            ? {}
-            : { authorization: `Bearer ${apiKey}` }),
+          authorization: `Bearer ${apiKey}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
           model: connection.model,
           input: variant.source,
           voice: authored.preset.tts.voice,
-          speed: authored.preset.tts.speed,
+          // Some OpenAI-compatible speech models (several on OpenRouter)
+          // reject `speed`; the default needs no parameter at all.
+          ...(authored.preset.tts.speed === 1
+            ? {}
+            : { speed: authored.preset.tts.speed }),
           response_format: 'mp3',
         }),
         signal: AbortSignal.any([

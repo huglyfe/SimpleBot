@@ -79,12 +79,14 @@ describe('RecordEditor', () => {
       ' edited',
     );
     await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.getByRole('button', { name: 'Discard' })).toBeDisabled();
     await user.keyboard('{Escape}');
     expect(
       screen.getByRole('dialog', { name: 'Edit Summary' }),
     ).toBeInTheDocument();
     await act(async () => result.reject(new Error('Write refused')));
     expect(screen.getByRole('alert')).toHaveTextContent('Write refused');
+    expect(screen.getByRole('button', { name: 'Discard' })).toBeEnabled();
     expect(screen.getByRole('textbox', { name: 'Summary' })).toHaveValue(
       'Original edited',
     );
