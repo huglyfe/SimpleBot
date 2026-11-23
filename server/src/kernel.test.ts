@@ -18,7 +18,7 @@ import Database from 'better-sqlite3';
 import { assembleAttempt } from './assemble.js';
 import { AuthoredFiles } from './authored.js';
 import { cardSchema, presetSchema } from '@simplebot/shared';
-import { searchHistory } from './storage.js';
+import { searchHistory, searchSessions } from './storage.js';
 import { compactSession, SUMMARY_CLIPPED } from './continuity.js';
 import { SCHEMA_VERSION } from './database.js';
 import { openStorage, type Storage } from './storage.js';
@@ -583,7 +583,7 @@ test('session state survives restart without replaying effect history or orderin
       {
         type: 'schedule_set',
         arguments: {
-          name: 'Morning',
+          name: ' Morning ',
           expression: '0 9 * * *',
           prompt: 'Check in.',
           enabled: true,
@@ -751,13 +751,15 @@ for (const prior of [null, ''])
       JSON.parse(await readFile(presetPath, 'utf8')),
     );
     preset.prompts.summarization =
-      'Summarize {{char}} for {{user}} with {{getvar::mood}} on {{date}} using {{model}}.';
+      'Summarize {{char}} for {{user}} with {{getvar::mood}} [{{persona}}|{{personality}}|{{scenario}}|{{mesExamplesRaw}}] on {{date}} using {{model}}.';
     preset.context.liveTailExchanges = 1;
     preset.persona.description = '{{user}} trusts {{char}}.';
     await writeFile(presetPath, JSON.stringify(preset));
     const cardPath = join(fixture.root, 'bots', 'echo', 'echo.json');
     const card = cardSchema.parse(JSON.parse(await readFile(cardPath, 'utf8')));
     card.data.description = '{{char}} helps {{user}}.';
+    card.data.personality = '{{personality}}';
+    card.data.mes_example = '<START>\n{{char}}: Hello';
     card.data.scenario = '{{user}} tests {{char}} with {{listvars}}.';
     await writeFile(cardPath, JSON.stringify(card));
 
@@ -812,7 +814,7 @@ for (const prior of [null, ''])
       (providerContext) => {
         assert.equal(
           getCurrentSystemPrompt(providerContext.messages),
-          `Summarize Echo for User with bright on August 23, 2026 using ${fixture.faux.getModel().id}.`,
+          `Summarize Echo for User with bright [{{user}} trusts {{char}}.|{{personality}}|{{user}} tests {{char}} with {{listvars}}.|<START>\n{{char}}: Hello] on August 23, 2026 using ${fixture.faux.getModel().id}.`,
         );
         assert.deepEqual(
           providerContext.messages.filter(
@@ -1181,6 +1183,69 @@ test('a session projects one title from its opening message of either role', asy
     storage.listSessions().find((session) => session.id === greeted)?.title,
     'Morning walk',
   );
+});
+
+test('session search fills its limit even when one session owns the highest ranked matches', async (context) => {
+  const { storage } = await fixture(context);
+  const busy = createSession(storage);
+  const other = createSession(storage);
+  for (let turn = 0; turn < 21; turn++) {
+    const admitted = admitReply(storage, busy, 'needle');
+    finish(storage, busy, admitted, 'answer');
+    storage.acceptPosition(busy, admitted.positionId, now);
+  }
+  finish(
+    storage,
+    other,
+    admitReply(storage, other, 'a longer message with needle'),
+    'answer',
+  );
+  assert.deepEqual(
+    searchSessions(storage.statements, 'needle', 2).map(
+      (match) => match.sessionId,
+    ),
+    [busy, other],
+  );
+});
+
+test('an uncompacted transcript can exceed the SQLite bind parameter limit', async (context) => {
+  const { storage } = await fixture(context);
+  const sessionId = createSession(storage);
+  // Seed 16,383 completed exchanges without timing thousands of admissions.
+  storage.connection.transaction(() => {
+    storage.connection.pragma('defer_foreign_keys = ON');
+    storage
+      .statements(
+        `WITH RECURSIVE assistants(n) AS (VALUES(1) UNION ALL SELECT n + 2 FROM assistants WHERE n < 32765)
+       INSERT INTO message_variants (id, position_id, ordinal, source, usage_json, provider, model, created_at)
+       SELECT 'v' || n, 'p' || n, 1, 'answer', '[]', 'faux', 'test', ? FROM assistants`,
+      )
+      .run(now);
+    storage
+      .statements(
+        `WITH RECURSIVE ordinals(n) AS (VALUES(0) UNION ALL SELECT n + 1 FROM ordinals WHERE n < 32765)
+       INSERT INTO message_positions (id, session_id, ordinal, role, source, selected_variant_id, created_at)
+       SELECT 'p' || n, ?, n, CASE n % 2 WHEN 0 THEN 'user' ELSE 'assistant' END,
+              CASE n % 2 WHEN 0 THEN 'question' END, CASE n % 2 WHEN 1 THEN 'v' || n END, ?
+       FROM ordinals`,
+      )
+      .run(sessionId, now);
+  })();
+  const target = admitReply(storage, sessionId, 'next');
+  const snapshot = storage.loadAttemptSnapshot(
+    sessionId,
+    target.positionId,
+    target.variantId,
+    5,
+  );
+  assert.equal(snapshot?.targetSource, 'next');
+  assert.equal(snapshot.session.positions.length, 32768);
+  const leaf = storage.createPendingLeaf({
+    sessionId,
+    liveTailExchanges: 1,
+    now,
+  });
+  assert.equal(leaf?.endOrdinal, 32765);
 });
 
 test('context exchange ranges stay session-local across large active leaf caps', async (context) => {

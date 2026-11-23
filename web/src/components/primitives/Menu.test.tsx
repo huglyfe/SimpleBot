@@ -25,20 +25,11 @@ function renderMenu(onSelect = vi.fn()) {
 }
 
 describe('Menu', () => {
-  it('opens from its trigger and reports expansion', async () => {
-    const { trigger } = renderMenu();
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-
-    await userEvent.click(trigger);
-
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('menu')).toBeInTheDocument();
-    expect(screen.getAllByRole('menuitem')).toHaveLength(2);
-  });
-
   it('closes on selection and returns focus to the trigger', async () => {
     const { trigger, onSelect } = renderMenu();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
     await userEvent.click(screen.getByRole('menuitem', { name: 'Edit title' }));
 

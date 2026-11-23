@@ -15,9 +15,10 @@
 .ui-button {
   min-height: var(--touch-target);
   flex: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-control);
   background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
   padding: 0 var(--space-lg);
   color: var(--text);
   font-size: var(--text-label);
@@ -48,6 +49,7 @@
 .ui-button.is-quiet {
   border-color: transparent;
   background: transparent;
+  box-shadow: none;
   color: var(--text-muted);
 }
 
@@ -89,6 +91,7 @@
 .ui-button.is-quiet.is-danger:disabled {
   border-color: var(--border);
   background: var(--surface-raised);
+  box-shadow: none;
   color: var(--text-muted);
   cursor: not-allowed;
 }
@@ -323,7 +326,7 @@ dialog::backdrop {
   max-width: calc(100vw - var(--space-sm) * 2);
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-surface);
   animation: ui-sheet-in-side var(--motion-expressive);
 }
 
@@ -334,7 +337,7 @@ dialog::backdrop {
   max-height: 88dvh;
   border: 1px solid var(--border);
   border-top: 0;
-  border-radius: 0 0 var(--radius-bubble) var(--radius-bubble);
+  border-radius: 0 0 var(--radius-surface) var(--radius-surface);
   margin-inline: auto;
   animation: ui-sheet-in-top var(--motion-expressive);
 }
@@ -350,7 +353,7 @@ dialog::backdrop {
   height: auto;
   max-height: calc(100dvh - var(--space-xl) * 2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-bubble);
+  border-radius: var(--radius-surface);
   animation: ui-sheet-in-center var(--motion-expressive);
   transform: translate(-50%, -50%);
 }
@@ -499,7 +502,7 @@ dialog::backdrop {
   display: inline-flex;
   min-width: 0;
   gap: 2px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-control);
   background: var(--surface-sunken);
   padding: 2px;
@@ -510,7 +513,7 @@ dialog::backdrop {
   display: grid;
   min-height: 32px;
   place-items: center;
-  border-radius: var(--radius-sm);
+  border-radius: calc(var(--radius-control) - 3px);
   padding: 0 var(--space-md);
   color: var(--text-muted);
   font-size: var(--text-label);
@@ -529,7 +532,9 @@ dialog::backdrop {
 
 .ui-segmented-option.is-selected {
   background: var(--surface-raised);
-  box-shadow: var(--shadow-pop);
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow-raised);
   color: var(--text);
 }
 

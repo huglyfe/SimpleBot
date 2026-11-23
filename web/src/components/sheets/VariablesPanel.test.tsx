@@ -54,22 +54,13 @@ describe('VariablesPanel', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add variable' }));
     expect(screen.getByRole('button', { name: 'Discard' })).toHaveFocus();
-    await user.type(screen.getByLabelText('Variable name'), 'mood');
+    await user.type(screen.getByLabelText('Variable name'), '  mood  ');
     await user.type(screen.getByLabelText('Value'), 'restless');
     await user.click(screen.getByRole('button', { name: 'Create variable' }));
 
     expect(onSet).toHaveBeenCalledWith('mood', 'restless', undefined);
     expect(screen.queryByLabelText('Variable name')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add variable' })).toHaveFocus();
-  });
-
-  it('writes the trimmed name the route would store', async () => {
-    const { onSet } = renderPanel();
-
-    const user = await fill('  mood  ', 'restless');
-    await user.click(screen.getByRole('button', { name: 'Create variable' }));
-
-    expect(onSet).toHaveBeenCalledWith('mood', 'restless', undefined);
   });
 
   it('refuses a name that is already taken instead of overwriting it', async () => {

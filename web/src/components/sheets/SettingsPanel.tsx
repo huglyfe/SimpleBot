@@ -176,24 +176,10 @@ export function SettingsPanel({
             onSelectPreset={async (presetSlug) => {
               if (!session) return;
               await setSessionPreset(session.id, presetSlug);
-              cache.setQueryData<Bootstrap>(
-                ['bootstrap'],
-                (current) =>
-                  current && {
-                    ...current,
-                    sessions: current.sessions.map((entry) =>
-                      entry.id === session.id
-                        ? { ...entry, presetSlug }
-                        : entry,
-                    ),
-                  },
-              );
-              void cache.invalidateQueries({
-                queryKey: ['session', session.id],
-              });
-              void cache.invalidateQueries({
-                queryKey: ['context', session.id],
-              });
+              await Promise.all([
+                cache.invalidateQueries({ queryKey: ['bootstrap'] }),
+                cache.invalidateQueries({ queryKey: ['context', session.id] }),
+              ]);
             }}
             save={saveAuthored}
             ttsConfigured={ttsConfigured}
@@ -214,8 +200,11 @@ function RootSettingsEditor({
   query: AuthoredQuery<Awaited<ReturnType<typeof getSettings>>['value']>;
 }): ReactElement {
   const cache = useQueryClient();
-  const { appearance, setAppearance } = useTheme();
-  const [draftAppearance, setDraftAppearance] = useState(appearance);
+  const { theme, setTheme } = useTheme();
+  const [draftTheme, setDraftTheme] = useState(theme);
+  const themeChanged =
+    draftTheme.appearance !== theme.appearance ||
+    draftTheme.accent !== theme.accent;
   const editor = useAuthoredEditor({
     query,
     save: async (value, revision) => {
@@ -247,14 +236,14 @@ function RootSettingsEditor({
   return (
     <AuthoredForm
       {...editor}
-      changed={editor.changed || draftAppearance !== appearance}
+      changed={editor.changed || themeChanged}
       discard={() => {
         editor.discard();
-        setDraftAppearance(appearance);
+        setDraftTheme(theme);
       }}
       onSave={async () => {
         await editor.update();
-        if (draftAppearance !== appearance) setAppearance(draftAppearance);
+        if (themeChanged) setTheme(draftTheme);
       }}
     >
       {section === 'providers' ? (
@@ -268,8 +257,8 @@ function RootSettingsEditor({
           value={editor.value}
           patch={patch}
           version={version}
-          appearance={draftAppearance}
-          onAppearanceChange={setDraftAppearance}
+          theme={draftTheme}
+          onThemeChange={setDraftTheme}
         />
       )}
     </AuthoredForm>

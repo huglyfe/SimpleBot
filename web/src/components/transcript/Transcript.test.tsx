@@ -51,6 +51,7 @@ function renderTranscript(
       sessionId="session-1"
       positions={positions}
       botName="Seraphina"
+      busy={live !== null}
       live={live}
       update={update}
       onAction={(...args) => {
@@ -90,12 +91,6 @@ describe('Transcript', () => {
     expect(write).toHaveBeenLastCalledWith('Hello there.');
   });
 
-  it('renders the position-0 greeting with its alternates as swipes', () => {
-    renderTranscript([greeting]);
-    expect(screen.getByText('Hello there.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Variant 1 of 2')).toBeInTheDocument();
-  });
-
   it('hides historical swipes while retaining copy and edit', () => {
     renderTranscript([
       { ...greeting, locked: true },
@@ -129,6 +124,8 @@ describe('Transcript', () => {
 
   it('selects the next alternate greeting through the swipe control', async () => {
     const { update } = renderTranscript([greeting]);
+    expect(screen.getByText('Hello there.')).toBeVisible();
+    expect(screen.getByLabelText('Variant 1 of 2')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Next variant' }));
     expect(update).toHaveBeenCalledWith(
       '/positions/position-0/selection',
@@ -162,20 +159,12 @@ describe('Transcript', () => {
     expect(regenerate).not.toHaveBeenCalled();
   });
 
-  it('shows the exact model id without repeating the provider', () => {
-    renderTranscript([greeting]);
-    const provenance = screen.getByRole('button', {
-      name: 'Response from test-model',
-    });
-    expect(provenance).toHaveTextContent('test-model');
-    expect(provenance).not.toHaveTextContent('openrouter');
-  });
-
   it('expands truncated model provenance when activated', async () => {
     renderTranscript([greeting]);
     const provenance = screen.getByRole('button', {
       name: 'Response from test-model',
     });
+    expect(provenance.textContent).toBe('test-model');
     expect(provenance).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(provenance);
     expect(provenance).toHaveAttribute('aria-expanded', 'true');
@@ -195,6 +184,7 @@ describe('Transcript', () => {
         sessionId="session-1"
         positions={[greeting]}
         botName="Seraphina"
+        busy={false}
         live={null}
         update={vi.fn(async () => undefined)}
         onAction={vi.fn()}
@@ -240,13 +230,8 @@ describe('Transcript', () => {
     );
     const rows = document.querySelectorAll('.msg-row');
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.className).toContain('is-live');
+    expect(rows[0]).toHaveClass('is-assistant', 'is-live');
     expect(screen.queryByText('Hello there.')).not.toBeInTheDocument();
-  });
-
-  it('shows no user row for a swipe, which answers a turn already on screen', () => {
-    renderTranscript([greeting], liveAttempt({ text: 'Thinking aloud.' }));
-    expect(document.querySelectorAll('.msg-row.is-user')).toHaveLength(0);
   });
 
   it('appends a new reply attempt after the existing positions', () => {
@@ -269,6 +254,7 @@ describe('Transcript', () => {
         sessionId="session-1"
         positions={[greeting]}
         botName="Seraphina"
+        busy
         live={liveAttempt({ text: 'A' })}
         update={vi.fn(async () => undefined)}
         onAction={vi.fn()}
@@ -282,6 +268,7 @@ describe('Transcript', () => {
         sessionId="session-1"
         positions={[greeting]}
         botName="Seraphina"
+        busy
         live={liveAttempt({ text: 'A longer stream' })}
         update={vi.fn(async () => undefined)}
         onAction={vi.fn()}
@@ -296,6 +283,7 @@ describe('Transcript', () => {
         sessionId="session-1"
         positions={[greeting]}
         botName="Seraphina"
+        busy
         live={liveAttempt({ text: 'A longer streamed response' })}
         update={vi.fn(async () => undefined)}
         onAction={vi.fn()}
@@ -325,7 +313,7 @@ describe('Transcript', () => {
         regenerate: vi.fn(),
       };
       const view = render(
-        <Transcript {...props} positions={[greeting]} live={attempt} />,
+        <Transcript {...props} positions={[greeting]} busy live={attempt} />,
       );
       attempt.trace = [
         { type: 'reasoning', text: 'Considering the response.' },
@@ -341,7 +329,12 @@ describe('Transcript', () => {
         },
       ];
       view.rerender(
-        <Transcript {...props} positions={[greeting]} live={{ ...attempt }} />,
+        <Transcript
+          {...props}
+          positions={[greeting]}
+          busy
+          live={{ ...attempt }}
+        />,
       );
       const toggle = screen.getByRole('button', { name: /Thinking/u });
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -363,13 +356,19 @@ describe('Transcript', () => {
         <Transcript
           {...props}
           positions={positions}
+          busy
           live={{ ...attempt, text: 'The answer.' }}
         />,
       );
       expect(screen.getByRole('button', { name: /Thinking/u })).toBe(toggle);
       expect(toggle).toHaveAttribute('aria-expanded', String(!close));
       view.rerender(
-        <Transcript {...props} positions={positions} live={null} />,
+        <Transcript
+          {...props}
+          positions={positions}
+          busy={false}
+          live={null}
+        />,
       );
       expect(screen.getByRole('button', { name: /Thought/u })).toBe(toggle);
       expect(toggle).toHaveAttribute('aria-expanded', String(!close));
@@ -383,6 +382,7 @@ describe('Transcript', () => {
         <Transcript
           {...props}
           positions={positions}
+          busy
           live={{ ...attempt, variantId: 'next-variant' }}
         />,
       );
@@ -446,16 +446,11 @@ describe('Transcript', () => {
       },
     ]);
     const row = document.querySelector('.msg-row.is-user');
-    expect(row?.className).not.toContain('is-editing');
     await userEvent.click(screen.getByRole('button', { name: 'Edit message' }));
-    expect(row?.className).not.toContain('is-editing');
     expect(within(screen.getByRole('dialog')).getByRole('textbox')).toHaveValue(
       'Hi',
     );
     expect(row?.querySelector('textarea')).toBeNull();
-    expect(
-      screen.queryByRole('button', { name: 'Cancel editing' }),
-    ).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
     expect(screen.getByRole('button', { name: 'Edit message' })).toHaveFocus();
   });

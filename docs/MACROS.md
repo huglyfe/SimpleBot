@@ -13,11 +13,15 @@ SimpleBot expands one small deterministic macro set in bot and preset text. Ordi
 - `{{isodate}}` — UTC date for the attempt
 - `{{isotime}}` — UTC time for the attempt
 - `{{idleDuration}}` — time since the preceding canonical user message
-- `{{getvar::name}}` — one accepted session variable
+- `{{getvar::name}}` or `{{getvar name}}` — one accepted session variable, or empty text if absent
+- `{{hasvar::name}}` — `true` if the variable exists, including an empty value, otherwise `false`
+- `{{persona}}` — selected persona description
+- `{{description}}`, `{{personality}}`, `{{scenario}}` — the corresponding character card text
+- `{{mesExamplesRaw}}` — the card’s raw dialogue examples, including line breaks and speaker markers
 - `{{todos}}` — current accepted to-dos, with IDs, titles, absolute and relative due dates, and notes; `No open to-dos.` when empty
 - `{{listvars}}` — all accepted session variables as sorted `name: value` lines
 
-Macro names are case-insensitive. `{{idle_duration}}` is retained as an alias for imported bot text. Unknown macros remain visible instead of being partially evaluated.
+Expansion makes one pass. Macros inside inserted text, including variable values and card fields, stay literal. Missing fields expand to empty text. Macro names are case-insensitive. `{{idle_duration}}` is retained as an alias for imported bot text. Unknown macros remain visible instead of being partially evaluated.
 
 Idle duration uses the two largest useful adjacent units: seconds, minutes and seconds, hours and minutes, or days and hours. With no preceding user message it expands to `0s`. The `system__idle_time` tool returns the same format.
 

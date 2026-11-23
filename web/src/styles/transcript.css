@@ -121,7 +121,7 @@
 /* The operator speaks in a tinted bubble; the bot speaks in unboxed prose
    across the full column, with no per-message portrait. */
 .msg-row.is-user .msg-surface {
-  border-radius: var(--radius-bubble);
+  border-radius: var(--radius-surface);
   border-bottom-right-radius: var(--radius-sm);
   background: var(--accent-soft);
   padding: 10px var(--space-lg);
@@ -247,7 +247,7 @@
 
 .msg-markdown code {
   color: var(--prose-accent);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
   background: var(--prose-code);
   padding: 0 var(--space-xs);
   font-family: var(--font-mono);

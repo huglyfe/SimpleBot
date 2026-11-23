@@ -7,15 +7,16 @@
  * `light-dark()` keeps system, light, and dark on one token map; the optional
  * `data-theme` attribute only pins the browser colour scheme.
  *
- * Palette: near-neutral surfaces separated by alpha hairlines, one violet
- * accent, and one 80% glass recipe for chrome that floats over the transcript.
+ * Palette: a neutral surface ramp, three border roles, one accent, and one 80%
+ * glass recipe for chrome that floats over the transcript. Everything tinted
+ * derives from `--accent`, so an accent theme is one declaration.
  * Desktop controls are compact; touch and phone layouts get 44px targets and
  * 16px text entry (iOS zooms focused fields below 16px).
  */
 
 :root {
   color-scheme: light dark;
-  --surface-glass: light-dark(rgb(252 252 253 / 80%), rgb(20 20 23 / 80%));
+  --surface-glass: light-dark(rgb(255 255 255 / 80%), rgb(20 20 23 / 80%));
   --glass-blur: 16px;
 
   /* Type family */
@@ -61,14 +62,15 @@
   /**
    * Surfaces, as one ramp: `sunken` is the navigation rail, `bg` the
    * conversation canvas, `surface` a sheet or dialog, `raised` a field or
-   * group on top of that. Hairline alpha borders separate them.
+   * group on top of that. Light mode raises with white on a tinted canvas and
+   * a soft shadow; dark mode raises by lightening.
    */
-  --bg: light-dark(#fcfcfd, #0c0c0e);
+  --bg: light-dark(#f7f7f9, #0c0c0e);
   --surface: light-dark(#ffffff, #141417);
   --surface-raised: light-dark(#ffffff, #1b1b1f);
-  --surface-sunken: light-dark(#f4f4f6, #111113);
-  --surface-hover: light-dark(rgb(0 0 0 / 4%), rgb(255 255 255 / 5%));
-  --surface-active: light-dark(rgb(0 0 0 / 7%), rgb(255 255 255 / 8%));
+  --surface-sunken: light-dark(#eeeef2, #111113);
+  --surface-hover: light-dark(rgb(24 24 27 / 5%), rgb(255 255 255 / 5%));
+  --surface-active: light-dark(rgb(24 24 27 / 9%), rgb(255 255 255 / 8%));
   --overlay-scrim: light-dark(rgb(24 24 27 / 30%), rgb(0 0 0 / 50%));
   --overlay-scrim-strong: light-dark(rgb(24 24 27 / 50%), rgb(0 0 0 / 70%));
 
@@ -77,21 +79,41 @@
   --text-muted: light-dark(#5f5f69, #a1a1aa);
   --text-faint: light-dark(#71717a, #80808a);
 
-  /* Borders */
-  --border: light-dark(rgb(0 0 0 / 10%), rgb(255 255 255 / 10%));
-  --border-subtle: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 6%));
+  /**
+   * Borders by role: `subtle` divides rows inside one surface, `border` edges
+   * a container, `control` edges anything typed into or pressed.
+   */
+  --border-subtle: light-dark(rgb(24 24 27 / 7%), rgb(255 255 255 / 6%));
+  --border: light-dark(rgb(24 24 27 / 11%), rgb(255 255 255 / 10%));
+  --border-control: light-dark(rgb(24 24 27 / 20%), rgb(255 255 255 / 16%));
 
-  /* Accent */
-  --accent: light-dark(#6d5ae6, #8b7cf6);
-  --accent-hover: light-dark(#5b48d8, #9d90f8);
-  --accent-soft: light-dark(rgb(109 90 230 / 10%), rgb(139 124 246 / 16%));
-  --on-accent: light-dark(#ffffff, #110e24);
+  /* Accent: the one themed colour, set by the `[data-accent]` rules below. */
+  --accent-hover: color-mix(
+    in oklab,
+    var(--accent) 88%,
+    light-dark(black, white)
+  );
+  --accent-soft: light-dark(
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    color-mix(in srgb, var(--accent) 16%, transparent)
+  );
+  --on-accent: light-dark(
+    #ffffff,
+    color-mix(in oklab, var(--accent) 10%, #0c0c0e)
+  );
 
-  /* Prose: warm narration and violet details frame neutral dialogue. */
+  /* Prose: warm narration and accent details frame neutral dialogue. */
   --prose-narration: light-dark(#895324, #d7b382);
-  --prose-accent: light-dark(#6245c4, #b4a0ff);
-  --prose-quote: light-dark(#584777, #c6b8e3);
-  --prose-code: light-dark(rgb(98 69 196 / 8%), rgb(180 160 255 / 10%));
+  --prose-accent: color-mix(
+    in oklab,
+    var(--accent) 82%,
+    light-dark(black, white)
+  );
+  --prose-quote: color-mix(in oklab, var(--accent) 35%, var(--text-muted));
+  --prose-code: light-dark(
+    color-mix(in srgb, var(--accent) 8%, transparent),
+    color-mix(in srgb, var(--accent) 12%, transparent)
+  );
 
   /* Status */
   --danger: light-dark(#b33a3a, #f27b7b);
@@ -103,19 +125,31 @@
   --switch-thumb: #ffffff;
 
   /* Focus */
-  --focus-ring: light-dark(rgb(109 90 230 / 45%), rgb(139 124 246 / 60%));
+  --focus-ring: light-dark(
+    color-mix(in srgb, var(--accent) 45%, transparent),
+    color-mix(in srgb, var(--accent) 60%, transparent)
+  );
 
-  /* Shape — rounded rectangles, circular icon buttons */
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-control: 8px;
-  --radius-card: 14px;
-  --radius-bubble: 16px;
+  /**
+   * Shape. Each step nests inside the next with a few pixels of padding:
+   * rows and chips, controls, groups and menus, then sheets, the composer,
+   * and bubbles.
+   */
+  --radius-sm: 6px;
+  --radius-control: 10px;
+  --radius-card: 16px;
+  --radius-surface: 20px;
   --radius-pill: 999px;
 
-  /* Elevation: floating panels and small pop-outs. */
+  /**
+   * Elevation: floating panels, small pop-outs, and the light-mode lift under
+   * a raised control or group. Dark surfaces lift by colour, not shadow.
+   */
   --shadow-sheet: 0 16px 48px light-dark(rgb(24 24 27 / 14%), rgb(0 0 0 / 50%));
-  --shadow-pop: 0 4px 16px light-dark(rgb(24 24 27 / 10%), rgb(0 0 0 / 40%));
+  --shadow-pop:
+    0 1px 2px light-dark(rgb(24 24 27 / 6%), transparent),
+    0 4px 16px light-dark(rgb(24 24 27 / 8%), rgb(0 0 0 / 40%));
+  --shadow-raised: 0 1px 2px light-dark(rgb(24 24 27 / 6%), transparent);
 
   /* Motion */
   --motion-fast: 150ms ease-out;
@@ -144,6 +178,35 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+}
+
+/**
+ * Accent themes. The root takes the chosen one; a settings swatch takes its
+ * own. Each light value carries white text at 4.5:1 or better.
+ */
+:root,
+[data-accent='violet'] {
+  --accent: light-dark(#6d5ae6, #8b7cf6);
+}
+
+[data-accent='azure'] {
+  --accent: light-dark(#2f6bdc, #6ea8ff);
+}
+
+[data-accent='lagoon'] {
+  --accent: light-dark(#0b7f74, #3fcfbd);
+}
+
+[data-accent='sage'] {
+  --accent: light-dark(#2f7d4f, #6fcf97);
+}
+
+[data-accent='rose'] {
+  --accent: light-dark(#c0397a, #f283b0);
+}
+
+[data-accent='graphite'] {
+  --accent: light-dark(#3f3f46, #d4d4d8);
 }
 
 @media (prefers-reduced-motion: reduce) {

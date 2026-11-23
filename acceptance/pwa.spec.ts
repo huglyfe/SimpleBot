@@ -81,13 +81,21 @@ export default (env) => {
       await (await navigator.serviceWorker.ready).update();
     });
     await expect(page).toHaveTitle('SimpleBot updated');
-    await expect(message).toHaveValue('');
+    await expect(message).toHaveValue(
+      'An open page reloads onto the new build',
+    );
     const newCaches = await page.evaluate(() => caches.keys());
     expect(newCaches).toContain('unrelated-cache');
     expect(
       newCaches.filter((key) => key.startsWith('simplebot-shell-')),
     ).toHaveLength(1);
     expect(newCaches).not.toEqual(oldCaches);
+    await page.getByRole('button', { name: 'Send message' }).click();
+    await expect(page.locator('.msg-row.is-user').last()).toContainText(
+      'An open page reloads onto the new build',
+    );
+    await page.reload();
+    await expect(message).toHaveValue('');
     await context.setOffline(true);
     await page.reload();
     await expect(page).toHaveTitle('SimpleBot updated');

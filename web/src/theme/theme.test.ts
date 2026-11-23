@@ -36,4 +36,14 @@ describe('appearance', () => {
 
     expect(browser.dataset.theme).toBe('dark');
   });
+
+  it('restores a chosen accent and ignores an unknown one', () => {
+    browser.storage.set(STORAGE_KEYS.accent, 'lagoon');
+    initTheme();
+    expect(browser.dataset.accent).toBe('lagoon');
+
+    browser.storage.set(STORAGE_KEYS.accent, 'chartreuse');
+    initTheme();
+    expect(browser.dataset.accent).toBeUndefined();
+  });
 });

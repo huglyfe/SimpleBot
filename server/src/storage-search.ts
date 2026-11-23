@@ -30,9 +30,6 @@ export type HistoryMatch = z.infer<typeof historyMatchSchema>;
 export type BotHistoryMatch = z.infer<typeof botHistoryMatchSchema>;
 export type SessionMatch = z.infer<typeof sessionMatchSchema>;
 
-/** Documents read per session asked for, bounding one crowded session's reach. */
-const SESSION_MATCH_FANOUT = 10;
-
 export function searchHistory(
   prepare: Prepare,
   sessionId: string,
@@ -95,16 +92,15 @@ export function searchSessions(
   limit: number,
 ): SessionMatch[] {
   const match = historyMatch(query);
-  if (match.length === 0) return [];
+  if (match.length === 0 || limit <= 0) return [];
   const rows = prepare(
     `SELECT d.session_id AS sessionId,
             snippet(search_fts, 0, '[', ']', ' … ', 12) AS snippet
      FROM search_fts
      JOIN search_documents d ON d.rowid = search_fts.rowid
      WHERE search_fts MATCH ?
-     ORDER BY bm25(search_fts), d.session_id, d.ordinal
-     LIMIT ?`,
-  ).all(match, limit * SESSION_MATCH_FANOUT);
+     ORDER BY bm25(search_fts), d.session_id, d.ordinal`,
+  ).iterate(match);
   const best = new Map<string, SessionMatch>();
   for (const row of rows) {
     const parsed = sessionMatchSchema.parse(row);

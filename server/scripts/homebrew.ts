@@ -29,7 +29,6 @@ const formula = (await readFile(path, 'utf8'))
     /^ {2}url .*$/mu,
     `  url "https://registry.npmjs.org/@huglyfe/simplebot/-/simplebot-${manifest.version}.tgz"`,
   )
-  .replace(/^ {2}sha256 .*$/mu, `  sha256 "${hash}"`)
-  .replace(/^ {2}version .*$/mu, `  version "${manifest.version}"`);
+  .replace(/^ {2}sha256 .*$/mu, `  sha256 "${hash}"`);
 await writeFile(path, formula);
 console.log(`Prepared ${manifest.version}: ${hash}`);

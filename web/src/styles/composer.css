@@ -30,8 +30,8 @@
   flex-direction: column;
   width: 100%;
   gap: var(--space-xs);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-surface);
   background: var(--surface-glass);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
@@ -47,6 +47,7 @@
   overflow-y: auto;
   border: 0;
   background: transparent;
+  box-shadow: none;
   padding: 6px 3px 6px 7px;
 }
 

@@ -21,7 +21,7 @@ Read `docs/FRONTEND_REQUIREMENTS.md` and consult backend requirements for affect
 
 - Keep one component per owning surface: shell/sidebar, conversation, settings, and authentication.
 - `src/styles/` owns the palette: `tokens.css` holds every colour and step, including the compact desktop and touch-sized `--touch-target`/`--text-ui` split, and the area stylesheets compose those tokens. `pnpm screens [label]` captures reference screenshots of a built WebUI into the ignored `.ui-screens/`.
-- Persist system/light/dark appearance in one browser key and apply it at startup.
+- Persist system/light/dark appearance and the accent theme in one browser key each and apply both at startup. An accent theme is one `[data-accent]` rule setting `--accent`.
 - Extract a reusable primitive after a pattern repeats.
 - Destructive actions (delete, remove, revoke, discard) use the shared red danger styles in their resting state, including icons and menus. Disabled actions stay muted.
 

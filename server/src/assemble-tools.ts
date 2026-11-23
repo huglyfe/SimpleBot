@@ -14,6 +14,7 @@ import { randomUUID } from 'node:crypto';
 import {
   TODO_TITLE_MAX,
   TODO_NOTE_MAX,
+  scheduleWriteSchema,
   todoCreateSchema,
   todoUpdateSchema,
   type Todo,
@@ -227,12 +228,10 @@ export const SYSTEM_TOOL_DEFINITIONS = deepFreeze([
       prompt: Type.String({ minLength: 1, maxLength: 20_000 }),
       enabled: Type.Optional(Type.Boolean({ default: true })),
     },
-    async (_context, arguments_) => {
-      return {
-        type: 'schedule_set',
-        arguments: structuredClone(arguments_),
-      };
-    },
+    async (_context, arguments_) => ({
+      type: 'schedule_set',
+      arguments: scheduleWriteSchema.parse(arguments_),
+    }),
   ),
   tool(
     'system__schedule_delete',

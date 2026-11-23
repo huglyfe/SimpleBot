@@ -27,6 +27,42 @@ import {
   streamAttempt,
 } from './test-helper.js';
 
+test('a blank schedule name returns an error to the model before it can propose an effect', async (context) => {
+  const fixture = await createTestFixture();
+  context.after(() => disposeTestFixture(fixture));
+  fixture.faux.setResponses([
+    fauxAssistantMessage(
+      [
+        fauxToolCall('system__schedule_set', {
+          name: '   ',
+          expression: '0 9 * * *',
+          prompt: 'Check in.',
+        }),
+      ],
+      { stopReason: 'toolUse' },
+    ),
+    (input) => {
+      const result = input.messages.at(-1);
+      return fauxAssistantMessage(
+        result?.role === 'toolResult' && result.isError
+          ? 'Please give the schedule a name.'
+          : 'Schedule proposed.',
+      );
+    },
+  ]);
+  const address = await listen(fixture.runtime);
+  const session = await createSession(address);
+  await readEvents(
+    await streamAttempt(address, session, {
+      kind: 'reply',
+      text: 'Schedule a check-in.',
+    }),
+  );
+  const { variant } = finalAssistant(await projection(address, session));
+  assert.equal(variant.source, 'Please give the schedule a name.');
+  assert.deepEqual(variant.effects, []);
+});
+
 test('SSE trace survives swipes and restart while reasoning stays out of later context, search, and compaction', async (context) => {
   const fixture = await createTestFixture();
   let runtime = fixture.runtime;

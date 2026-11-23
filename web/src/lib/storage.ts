@@ -1,16 +1,25 @@
 /** Browser preferences are conveniences; unavailable storage must not stop UI. */
-export function readStorage(key: string): string | null {
+type StorageArea = 'localStorage' | 'sessionStorage';
+
+export function readStorage(
+  key: string,
+  area: StorageArea = 'localStorage',
+): string | null {
   try {
-    return localStorage.getItem(key);
+    return globalThis[area].getItem(key);
   } catch {
     return null;
   }
 }
 
-export function writeStorage(key: string, value: string | null): void {
+export function writeStorage(
+  key: string,
+  value: string | null,
+  area: StorageArea = 'localStorage',
+): void {
   try {
-    if (value === null) localStorage.removeItem(key);
-    else localStorage.setItem(key, value);
+    if (value === null) globalThis[area].removeItem(key);
+    else globalThis[area].setItem(key, value);
   } catch {
     // A private or host-restricted browser may deny preference storage.
   }

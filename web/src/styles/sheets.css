@@ -255,6 +255,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -578,4 +579,43 @@
 .bot-file-action .ui-hint {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* Accent theme swatches: each paints its own `[data-accent]` colour. */
+
+.accent-swatches {
+  display: flex;
+  gap: var(--space-xs);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.accent-swatch {
+  position: relative;
+  display: grid;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  place-items: center;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.accent-swatch::before {
+  width: 20px;
+  height: 20px;
+  border-radius: inherit;
+  background: var(--accent);
+  content: '';
+}
+
+.accent-swatch:has(:checked)::before {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--accent);
+}
+
+.accent-swatch:has(:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }

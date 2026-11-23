@@ -6,7 +6,8 @@ import {
   type Bootstrap,
 } from '@simplebot/shared';
 
-import { getContext } from '../../api.js';
+import { getPresetDocument } from '../../api.js';
+import type { ConversationState } from '../../lib/conversation.js';
 import { ContextRingIcon, MenuIcon, TuneIcon } from '../../icons.js';
 import { Avatar } from '../primitives/Avatar.js';
 import { IconButton } from '../primitives/IconButton.js';
@@ -17,6 +18,7 @@ export interface ConversationHeaderProps {
   bot: Bot | undefined;
   /** The selected conversation; controls need one. */
   sessionId: string | null;
+  presetSlug: string | null;
   drawerOpen: boolean;
   onToggleDrawer: () => void;
   onOpenBotSheet: () => void;
@@ -34,6 +36,7 @@ export interface ConversationHeaderProps {
 export function ConversationHeader({
   bot,
   sessionId,
+  presetSlug,
   drawerOpen,
   onToggleDrawer,
   onOpenBotSheet,
@@ -41,19 +44,37 @@ export function ConversationHeader({
   onOpenPreset,
   toggleRef,
 }: ConversationHeaderProps): ReactElement {
-  const context = useQuery({
-    queryKey: ['context', sessionId],
-    queryFn: () => getContext(sessionId ?? ''),
-    enabled: sessionId !== null,
-  });
-  // The same two numbers the acceptance gate compares.
-  const usage = context.data?.lastRequestUsage ?? null;
-  const threshold = context.data?.compactionThresholdTokens;
+  // The ring asks for nothing per message. Usage arrives on the reply itself,
+  // so this only observes the transcript Conversation loads; the threshold is
+  // the preset document the Preset panel edits, read once and then kept
+  // current by that panel's saves.
+  const conversation = useQuery<ConversationState>({
+    queryKey: ['session', sessionId],
+    enabled: false,
+  }).data;
+  const preset = useQuery({
+    queryKey: ['authored', `presets/${encodeURIComponent(presetSlug ?? '')}`],
+    queryFn: () => getPresetDocument(presetSlug ?? ''),
+    enabled: presetSlug !== null,
+    staleTime: Infinity,
+  }).data;
+  // The same two numbers the acceptance gate compares: the newest reply with
+  // content, and its last provider call.
+  const latest = conversation?.positions.findLast(
+    (position) =>
+      position.role === 'assistant' &&
+      (position.variant.source !== '' ||
+        position.variant.provider === 'authored'),
+  );
+  const usage =
+    latest?.role === 'assistant' ? (latest.variant.usage.at(-1) ?? null) : null;
+  const threshold = preset?.value.context.thresholdTokens;
   const promptTokens = usage === null ? null : promptTokenCount(usage);
   const progress =
     promptTokens === null || threshold === undefined
       ? null
       : promptTokens / threshold;
+  const full = progress !== null && progress >= 1;
 
   return (
     <header className="shell-header">
@@ -93,18 +114,14 @@ export function ConversationHeader({
           title={
             promptTokens === null || threshold === undefined
               ? 'Conversation controls'
-              : `Context ${promptTokens.toLocaleString()} of ${threshold.toLocaleString()} tokens before compaction`
+              : `Context ${promptTokens.toLocaleString()} of ${threshold.toLocaleString()} input tokens${full ? ' · compacts on next message' : ''}`
           }
           disabled={sessionId === null}
           onClick={onOpenConversation}
         >
           <ContextRingIcon
             progress={progress}
-            className={
-              progress !== null && progress >= 1
-                ? 'context-ring is-full'
-                : 'context-ring'
-            }
+            className={full ? 'context-ring is-full' : 'context-ring'}
           />
         </IconButton>
         <IconButton

@@ -95,7 +95,7 @@ export const ContextRingIcon = ({
   ...props
 }: IconProps & { progress: number | null }) => (
   <Icon {...props}>
-    <path d={GAUGE_ARC} opacity="0.3" />
+    <path d={GAUGE_ARC} opacity="0.4" />
     {progress === null || progress <= 0 ? null : (
       <path
         d={GAUGE_ARC}

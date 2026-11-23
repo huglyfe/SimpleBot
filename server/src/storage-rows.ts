@@ -290,28 +290,6 @@ export function nextCronRun(
   }
 }
 
-export function parseScheduleEffect(
-  arguments_: Record<string, unknown>,
-): ScheduleWrite {
-  const { id, name, expression, prompt, enabled = true } = arguments_;
-  if (
-    (id !== undefined && typeof id !== 'string') ||
-    typeof name !== 'string' ||
-    typeof expression !== 'string' ||
-    typeof prompt !== 'string' ||
-    typeof enabled !== 'boolean'
-  ) {
-    throw new StorageConflictError('Invalid schedule effect');
-  }
-  return {
-    ...(id === undefined ? {} : { id }),
-    name,
-    expression,
-    prompt,
-    enabled,
-  };
-}
-
 export function inspectImage(data: Buffer): {
   mimeType: 'image/png' | 'image/jpeg';
   width: number;

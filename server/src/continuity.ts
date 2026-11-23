@@ -133,8 +133,8 @@ async function summarize(
       ? null
       : options.storage.leafSummary(leaf.priorLeafId);
   const expand = createPromptExpander({
-    bot: authored.writing.name,
-    user: authored.preset.persona.name,
+    card: authored.writing,
+    persona: authored.preset.persona,
     model: model.id,
     now: startedAt,
     timezone: authored.config.application.timezone,

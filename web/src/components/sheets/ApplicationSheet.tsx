@@ -9,7 +9,7 @@ import {
 
 import { SegmentedControl } from '../primitives/SegmentedControl.js';
 import { SearchPicker } from '../primitives/SearchPicker.js';
-import type { Appearance } from '../../theme/theme.js';
+import { ACCENTS, type Theme } from '../../theme/theme.js';
 import { AdvancedSettings, type AdvancedSetting } from './AdvancedSettings.js';
 import { Field } from '../primitives/Field.js';
 import { Section } from './Section.js';
@@ -92,19 +92,23 @@ const SETTINGS = LIMITS.map((setting) => ({
   fallback: APPLICATION_DEFAULTS[setting.key],
 }));
 
+const accentName = (accent: string) =>
+  accent.charAt(0).toUpperCase() + accent.slice(1);
+
 export function ApplicationSheet({
   value,
   patch,
   version,
-  appearance,
-  onAppearanceChange,
+  theme,
+  onThemeChange,
 }: {
   value: { application: Partial<AppSettings['application']> };
   patch: (key: string, next: unknown) => void;
   /** Reported by the running server, never spelled by the client. */
   version: string;
-  appearance: Appearance;
-  onAppearanceChange: (next: Appearance) => void;
+  /** Browser-local, drafted with the panel and applied by its Save. */
+  theme: Theme;
+  onThemeChange: (next: Theme) => void;
 }): ReactElement {
   const application = value.application;
   const timezoneOptions = useMemo(
@@ -169,16 +173,40 @@ export function ApplicationSheet({
         <Field label="Appearance">
           <SegmentedControl
             label="Appearance"
-            value={appearance}
+            value={theme.appearance}
             options={[
               { value: 'system', label: 'System' },
               { value: 'light', label: 'Light' },
               { value: 'dark', label: 'Dark' },
             ]}
-            onChange={(next) => {
-              onAppearanceChange(next);
+            onChange={(appearance) => {
+              onThemeChange({ ...theme, appearance });
             }}
           />
+        </Field>
+        <Field label="Accent">
+          <fieldset className="accent-swatches">
+            <legend className="sr-only">Accent</legend>
+            {ACCENTS.map((accent) => (
+              <label
+                key={accent}
+                className="accent-swatch"
+                data-accent={accent}
+                title={accentName(accent)}
+              >
+                <input
+                  type="radio"
+                  className="sr-only"
+                  name="accent"
+                  aria-label={accentName(accent)}
+                  checked={accent === theme.accent}
+                  onChange={() => {
+                    onThemeChange({ ...theme, accent });
+                  }}
+                />
+              </label>
+            ))}
+          </fieldset>
         </Field>
       </Section>
 

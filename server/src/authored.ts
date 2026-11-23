@@ -63,11 +63,7 @@ export class AuthoredFiles {
     return this.#readRequired('config.json', storedConfigSchema);
   }
 
-  async resolveSessionPreset(
-    botSlug: string,
-    requestedPreset: string | undefined,
-  ): Promise<string> {
-    slug.parse(botSlug);
+  async readSessionOpening(botSlug: string, requestedPreset?: string) {
     const document = await this.readBot(botSlug);
     const selected = requestedPreset ?? botSettings(document).defaultPreset;
     if (selected === undefined)
@@ -77,7 +73,12 @@ export class AuthoredFiles {
       join('presets', `${presetSlug}.json`),
       presetSchema,
     );
-    return presetSlug;
+    return {
+      presetSlug,
+      greetings: botGreetings(document).map((greeting) =>
+        greeting.trim() === '' ? '' : greeting,
+      ),
+    };
   }
 
   async readApplication(): Promise<AppConfig['application']> {
@@ -308,12 +309,6 @@ export class AuthoredFiles {
       name,
       avatarUrl: (await this.avatar(botSlug))?.url ?? null,
     };
-  }
-
-  async readGreetings(botSlug: string): Promise<string[]> {
-    return botGreetings(await this.readBot(botSlug)).map((greeting) =>
-      greeting.trim() === '' ? '' : greeting,
-    );
   }
 
   #botPath(botSlug: string): string {

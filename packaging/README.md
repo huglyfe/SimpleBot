@@ -37,7 +37,7 @@ The alpha tag prevents this prerelease from becoming the default `latest` instal
 pnpm package:brew /absolute/path/to/package.tgz
 ```
 
-This fills the formula's version, npm URL, and SHA-256 from the exact tarball. The remote URL will not work until that tarball is published. Homebrew uses Node 24 and OpenSSL, and runs the same `simplebot start` for its service. Before announcing Homebrew support, run formula style/audit, install/test, and service start/stop against disposable data on the intended host. Publish through an owned tap (such as `huglyfe/homebrew-simplebot`), not a claim of Homebrew core inclusion. Homebrew readiness does not gate the source alpha.
+This fills the formula's npm URL and SHA-256 from the exact tarball; Homebrew reads the version from the URL. The remote URL will not work until that tarball is published. Homebrew uses Node 24 and OpenSSL, and runs the same `simplebot start` for its service. Before announcing Homebrew support, run formula style/audit, install/test, and service start/stop against disposable data on the intended host. Publish through an owned tap (such as `huglyfe/homebrew-simplebot`), not a claim of Homebrew core inclusion. Homebrew readiness does not gate the source alpha.
 
 ## Public source export
 

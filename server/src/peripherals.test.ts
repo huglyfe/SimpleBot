@@ -355,6 +355,32 @@ test('owner pairing is one-use and backups verify before fresh-root restore', as
   });
 });
 
+test('a backup requires config and preserves empty authored collections through verification', async (t) => {
+  const fixture = await createTestFixture();
+  t.after(() => disposeTestFixture(fixture));
+  const parent = await disposableDirectory('incomplete-backup');
+  const backup = join(parent, 'backup');
+  await rm(join(fixture.root, 'bots'), { recursive: true });
+  await mkdir(join(fixture.root, 'bots'));
+  await createBackup(fixture.root, backup, fixture.runtime.storage);
+  const good = join(parent, 'restored');
+  await restoreBackup(backup, good);
+  assert.deepEqual(await readdir(join(good, 'bots')), []);
+  await rm(join(backup, 'payload', 'bots'), { recursive: true });
+  await assert.rejects(restoreBackup(backup, join(parent, 'restore')), /bots/u);
+  assert.deepEqual((await readdir(parent)).sort(), ['backup', 'restored']);
+  await rm(join(fixture.root, 'config.json'));
+  await assert.rejects(
+    createBackup(
+      fixture.root,
+      join(parent, 'incomplete'),
+      fixture.runtime.storage,
+    ),
+    /config.json/u,
+  );
+  assert.deepEqual((await readdir(parent)).sort(), ['backup', 'restored']);
+});
+
 test('a backup whose database outran its files fails instead of publishing', async (context) => {
   const fixture = await createTestFixture();
   context.after(() => disposeTestFixture(fixture));
@@ -412,6 +438,12 @@ test('doctor accepts renamed presets and empty bot collections but reports a mis
     findings: [],
   });
 
+  await mkdir(join(fixture.root, 'bots', 'broken'));
+  await writeFile(join(fixture.root, 'bots', 'broken', 'broken.json'), '{}');
+  assert.deepEqual((await doctor(fixture.root, databasePath)).findings, [
+    'Unreadable bot card: bots/broken',
+  ]);
+  await rm(join(fixture.root, 'bots', 'broken'), { recursive: true });
   await rm(join(fixture.root, 'bots', 'echo'), {
     recursive: true,
     force: true,
@@ -420,11 +452,6 @@ test('doctor accepts renamed presets and empty bot collections but reports a mis
     ok: true,
     findings: [],
   });
-  await mkdir(join(fixture.root, 'bots', 'broken'));
-  await writeFile(join(fixture.root, 'bots', 'broken', 'broken.json'), '{}');
-  assert.deepEqual((await doctor(fixture.root, databasePath)).findings, [
-    'No readable bot in bots/',
-  ]);
   await rm(join(fixture.root, 'bots'), { recursive: true });
   assert.deepEqual((await doctor(fixture.root, databasePath)).findings, [
     'Missing or unreadable: bots/',

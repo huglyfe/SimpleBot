@@ -21,7 +21,17 @@ import {
   restoreBackup,
   verifyBackup,
 } from './operations.js';
-import { initializeRoot, resolveRoot, SCHEMA, VERSION, WEB } from './root.js';
+import {
+  assertPrivateRoot,
+  listenerSettings,
+  missingRootEntry,
+  initializeRoot,
+  resolveRoot,
+  SCHEMA,
+  VERSION,
+  WEB,
+} from './root.js';
+import { acquireRuntimeOwnership } from './runtime-ownership.js';
 import { createRuntime } from './runtime.js';
 import { initializeDatabase } from './database.js';
 
@@ -31,7 +41,7 @@ Usage: ${PRODUCT_SLUG} [command] [arguments]
 
   start                        Initialize an absent root and run the server (default)
   init                         Create the operator root without starting the server
-  doctor                       Report authored, certificate, and database findings
+  doctor                       Check local files, listener settings, TLS, and database
   pair                         Print a one-use browser pairing code
   pair key                     Set and print a long-lived owner key
   backup <directory>           Write a verified snapshot of this root
@@ -120,7 +130,7 @@ async function runCommand(
     return 0;
   }
   if (command === 'doctor') {
-    const result = await doctor(root, databasePath(root));
+    const result = await doctor(root, databasePath(root), environment);
     io.out(JSON.stringify(result, null, 2));
     return result.ok ? 0 : 1;
   }
@@ -138,28 +148,31 @@ async function runCommand(
       return 0;
     });
   }
-  if (command === 'backup') {
-    const destination = rest[0];
-    if (destination === undefined) return usageError(io, 'backup <directory>');
-    return withDatabase(root, async (database) => {
-      const manifest = await createBackup(root, destination, {
-        backup: async (target) => {
-          await database.backup(target);
-        },
-      });
-      io.out(JSON.stringify(manifest, null, 2));
-      return 0;
-    });
-  }
-  if (command === 'verify') {
+  if (command === 'backup' || command === 'verify') {
     const path = rest[0];
-    if (path === undefined) return usageError(io, 'verify <directory>');
-    io.out(JSON.stringify(await verifyBackup(path), null, 2));
+    if (!path) return usageError(io, `${command} <directory>`);
+    const manifest =
+      command === 'verify'
+        ? await verifyBackup(path)
+        : await withDatabase(root, (database) =>
+            createBackup(root, path, {
+              backup: async (target) => {
+                await database.backup(target);
+              },
+            }),
+          );
+    io.out(
+      JSON.stringify({
+        path: resolve(path),
+        files: manifest.files.length,
+        bytes: manifest.files.reduce((total, file) => total + file.bytes, 0),
+      }),
+    );
     return 0;
   }
   if (command === 'restore') {
     const [path, freshRoot] = rest;
-    if (path === undefined || freshRoot === undefined)
+    if (!path || !freshRoot)
       return usageError(io, 'restore <directory> <fresh-root>');
     await restoreBackup(path, freshRoot);
     io.out(resolve(freshRoot));
@@ -169,6 +182,12 @@ async function runCommand(
     // Uninstalling code never removes conversations. This is the one command
     // that does, it names the exact root, and it requires the operator to type
     // that root back.
+    await assertPrivateRoot(root);
+    const missing = missingRootEntry(root);
+    if (missing)
+      throw new Error(
+        `Unrecognized SimpleBot root at ${root}: missing or invalid ${missing}`,
+      );
     io.out(`This permanently deletes every conversation, bot, preset,`);
     io.out(`credential reference, attachment, and backup under:`);
     io.out(`  ${root}`);
@@ -177,7 +196,12 @@ async function runCommand(
       io.error('Confirmation did not match. Nothing was removed.');
       return 1;
     }
-    await rm(root, { recursive: true, force: true });
+    const release = await acquireRuntimeOwnership(databasePath(root));
+    try {
+      await rm(root, { recursive: true });
+    } finally {
+      release();
+    }
     io.out(`Removed ${root}`);
     return 0;
   }
@@ -195,33 +219,19 @@ async function start(
   // A finding here names what the certificate read below is about to fail on.
   for (const finding of initialized.findings) io.error(finding);
   const config = await new AuthoredFiles(root).validateRequired();
-  const { application } = config;
-  const host = environment[ENV.host] ?? '127.0.0.1';
-  const loopback = host === '127.0.0.1' || host === '::1';
-  if (!application.loginEnabled && !loopback)
-    throw new Error(
-      `Login-disabled mode requires ${ENV.host}=127.0.0.1 or ::1.`,
-    );
-  if (!loopback && (!environment[ENV.tlsKey] || !environment[ENV.tlsCert]))
-    throw new Error(
-      `Remote access requires ${ENV.tlsKey} and ${ENV.tlsCert}. Use a certificate for your server name that clients trust.`,
-    );
-  const tls = application.loginEnabled
-    ? {
-        key: await readFile(
-          resolve(environment[ENV.tlsKey] ?? join(root, 'data/tls/key.pem')),
-        ),
-        cert: await readFile(
-          resolve(environment[ENV.tlsCert] ?? join(root, 'data/tls/cert.pem')),
-        ),
-      }
+  const {
+    host,
+    port,
+    tls: paths,
+  } = listenerSettings(root, config.application.loginEnabled, environment);
+  const tls = paths
+    ? { key: await readFile(paths.key), cert: await readFile(paths.cert) }
     : undefined;
   const runtime = await createRuntime({
     config,
     paths: { root, database: databasePath(root), schema: SCHEMA, web: WEB },
     ...(tls === undefined ? {} : { tls }),
   });
-  const port = Number(environment[ENV.port] ?? '3000');
   let address: string;
   try {
     address = await runtime.app.listen({ host, port });

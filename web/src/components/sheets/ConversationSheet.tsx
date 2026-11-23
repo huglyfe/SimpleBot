@@ -163,7 +163,7 @@ function ContextPanel({
           <div>
             <dt>Compacts at</dt>
             <dd>
-              {context.compactionThresholdTokens.toLocaleString()} prompt tokens
+              {context.compactionThresholdTokens.toLocaleString()} input tokens
             </dd>
           </div>
           {usage === null ? null : (

@@ -173,7 +173,10 @@ describe('SettingsPanel provider save', () => {
 describe('SettingsPanel owned projections', () => {
   it('confirms discarding a dirty preset before switching without writing', async () => {
     const user = userEvent.setup();
-    renderPanel({ section: 'preset' }, SESSION);
+    const client = renderPanel({ section: 'preset' }, SESSION);
+    client.setQueryData(['bootstrap'], { sessions: [SESSION] });
+    client.setQueryData(['session', SESSION.id], {});
+    client.setQueryData(['context', SESSION.id], {});
     await user.type(await screen.findByLabelText('Name'), ' edited');
     await user.tab();
     await user.click(screen.getByRole('button', { name: 'Preset' }));
@@ -191,6 +194,13 @@ describe('SettingsPanel owned projections', () => {
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
     );
     expect(api.setSessionPreset).toHaveBeenCalledWith(SESSION.id, 'terse');
+    expect(client.getQueryState(['bootstrap'])?.isInvalidated).toBe(true);
+    expect(client.getQueryState(['context', SESSION.id])?.isInvalidated).toBe(
+      true,
+    );
+    expect(client.getQueryState(['session', SESSION.id])?.isInvalidated).toBe(
+      false,
+    );
   });
 
   it('retains the draft and current preset when a confirmed switch fails', async () => {
@@ -299,15 +309,17 @@ it('keeps a failed popup save open with its draft, then leaves after a successfu
   expect(api.saveSettings).toHaveBeenCalledTimes(2);
 });
 
-it('Discard resets configuration and appearance without writing or leaving the panel', async () => {
+it('Discard resets configuration and theme without writing or leaving the panel', async () => {
   const user = userEvent.setup();
   const close = vi.fn();
   renderPanel({ section: 'application' }, undefined, close);
   await user.click(await screen.findByRole('radio', { name: 'Off' }));
   await user.click(screen.getByRole('radio', { name: 'Dark' }));
+  await user.click(screen.getByRole('radio', { name: 'Rose' }));
   await user.click(screen.getByRole('button', { name: 'Discard' }));
   expect(screen.getByRole('radio', { name: 'Required' })).toBeChecked();
   expect(screen.getByRole('radio', { name: 'System' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Violet' })).toBeChecked();
   expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Close panel' })).toHaveFocus();
   expect(close).not.toHaveBeenCalled();

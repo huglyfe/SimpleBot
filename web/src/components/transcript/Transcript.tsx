@@ -38,6 +38,7 @@
 import {
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactElement,
@@ -75,6 +76,7 @@ export function Transcript({
   onReachLiveEdge,
   ttsConfigured = true,
   botName,
+  busy,
   live,
   update,
   onAction,
@@ -93,6 +95,7 @@ export function Transcript({
   onReachLiveEdge?: () => void;
   ttsConfigured?: boolean;
   botName: string;
+  busy: boolean;
   live: LiveAttempt | null;
   update: TranscriptUpdate;
   onAction: TranscriptAction;
@@ -118,7 +121,13 @@ export function Transcript({
    */
   const gesture = useRef(false);
   const followFrame = useRef<number | null>(null);
-  const busy = live !== null;
+  const days = useMemo(
+    () =>
+      positions.map((position) =>
+        conversationDateKey(position.createdAt, timezone),
+      ),
+    [positions, timezone],
+  );
 
   // 1. A session opened. Stop any audio and place the viewport once.
   useLayoutEffect(() => {
@@ -299,13 +308,10 @@ export function Transcript({
   }
 
   const items: ReactNode[] = [];
-  let previousDay: string | null = null;
-  for (const position of positions) {
-    const day = conversationDateKey(position.createdAt, timezone);
-    if (day !== previousDay) {
-      previousDay = day;
+  for (const [index, position] of positions.entries()) {
+    if (days[index] !== days[index - 1]) {
       items.push(
-        <p key={`day-${day}-${position.id}`} className="msg-day-divider">
+        <p key={`day-${position.id}`} className="msg-day-divider">
           <span>{formatDayDivider(position.createdAt, timezone)}</span>
         </p>,
       );

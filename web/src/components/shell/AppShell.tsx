@@ -17,8 +17,8 @@ function readDesktopCollapsed(): boolean {
 
 export interface AppShellProps {
   data: Bootstrap;
-  activeSessionId: string | null;
-  activeBotSlug: string | undefined;
+  activeSession: Bootstrap['sessions'][number] | undefined;
+  bot: Bootstrap['bots'][number] | undefined;
   onSelectSession: (id: string) => void;
   onNewConversation: (botSlug: string) => void;
   creatingConversation?: boolean;
@@ -47,8 +47,8 @@ export interface AppShellProps {
  */
 export function AppShell({
   data,
-  activeSessionId,
-  activeBotSlug,
+  activeSession,
+  bot,
   children,
   ...handlers
 }: AppShellProps): ReactElement {
@@ -85,7 +85,7 @@ export function AppShell({
   const drawer = (
     <NavigationDrawer
       data={data}
-      activeSessionId={activeSessionId}
+      activeSessionId={activeSession?.id ?? null}
       overlay={isPhone}
       returnFocus={() => openRef.current}
       onClose={toggleDrawer}
@@ -103,8 +103,6 @@ export function AppShell({
       onOpenApplication={handlers.onOpenApplication}
     />
   );
-
-  const bot = data.bots.find((item) => item.slug === activeBotSlug);
 
   return (
     <div className="shell-root">
@@ -131,7 +129,8 @@ export function AppShell({
       <div className="shell-main">
         <ConversationHeader
           bot={bot}
-          sessionId={activeSessionId}
+          sessionId={activeSession?.id ?? null}
+          presetSlug={activeSession?.presetSlug ?? null}
           drawerOpen={drawerOpen}
           onToggleDrawer={toggleDrawer}
           onOpenBotSheet={handlers.onOpenBotSheet}

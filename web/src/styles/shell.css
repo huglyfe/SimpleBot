@@ -90,9 +90,10 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface-glass);
+  box-shadow: var(--shadow-raised);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
   padding: 2px;
@@ -152,7 +153,7 @@
 
 /* At the compaction threshold: the next accepted response compacts. */
 .context-ring.is-full {
-  color: var(--accent);
+  color: var(--warning);
 }
 
 /* Drawer */

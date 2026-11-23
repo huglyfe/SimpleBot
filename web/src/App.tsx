@@ -182,8 +182,8 @@ function ChatApp() {
     <TimePreferences value={data.time}>
       <AppShell
         data={data}
-        activeSessionId={activeId}
-        activeBotSlug={active?.botSlug}
+        activeSession={active}
+        bot={bot}
         onSelectSession={setActiveId}
         onNewConversation={(slug) => void startConversation(slug)}
         creatingConversation={creatingConversation}

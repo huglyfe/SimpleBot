@@ -119,6 +119,18 @@ try {
   await shot('12-phone');
   await page.getByRole('button', { name: 'Open conversations' }).click();
   await shot('13-phone-drawer');
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page
+    .getByRole('button', { name: 'Application settings', exact: true })
+    .click();
+  await page.getByTitle('Lagoon').click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await shot('14-application-accent-light');
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').waitFor({ state: 'detached' });
+  await shot('15-conversation-accent-light');
   console.log(`Screens written to ${out}`);
 } finally {
   await browser.close();

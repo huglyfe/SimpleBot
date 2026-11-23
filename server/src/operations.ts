@@ -4,6 +4,7 @@ import {
   randomUUID,
   X509Certificate,
 } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 import {
   cp,
   lstat,
@@ -12,20 +13,26 @@ import {
   readdir,
   rename,
   rm,
-  stat,
+  mkdtemp,
   unlink,
   writeFile,
 } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 
+import { pipeline } from 'node:stream/promises';
+
 import Database from 'better-sqlite3';
 import { z } from 'zod';
-import { ENV } from '@simplebot/shared';
+import { slug } from '@simplebot/shared';
 
 import { assertCurrentSchema } from './database.js';
 import type { Storage } from './storage.js';
 import { AuthoredFiles } from './authored.js';
-import { assertPrivateRoot } from './root.js';
+import {
+  assertPrivateRoot,
+  listenerSettings,
+  missingRootEntry,
+} from './root.js';
 
 const manifestSchema = z.strictObject({
   format: z.literal('simplebot-backup'),
@@ -47,6 +54,9 @@ export async function createBackup(
   destination: string,
   storage: Pick<Storage, 'backup'>,
 ): Promise<Manifest> {
+  const missing = missingRootEntry(root);
+  if (missing)
+    throw new Error(`Cannot back up ${root}: missing or invalid ${missing}`);
   const target = resolve(destination);
   await assertAbsent(target);
   const stage = `${target}.${randomUUID()}.partial`;
@@ -89,16 +99,25 @@ export async function createBackup(
   }
 }
 
-export async function verifyBackup(path: string): Promise<Manifest> {
+export async function verifyBackup(
+  path: string,
+  payload = join(path, 'payload'),
+): Promise<Manifest> {
   const parsed = manifestSchema.safeParse(
     JSON.parse(await readFile(join(path, 'manifest.json'), 'utf8')),
   );
   if (!parsed.success) throw new Error('Invalid backup manifest');
   const source = parsed.data;
-  const actual = await describeFiles(join(path, 'payload'));
-  if (JSON.stringify(actual) !== JSON.stringify(source.files))
+  if (!(await lstat(payload)).isDirectory())
+    throw new Error('Backup payload must be a directory');
+  const missing = missingRootEntry(payload);
+  if (missing)
+    throw new Error(`Backup payload is missing or has an invalid ${missing}`);
+  const actual = await describeFiles(payload);
+  // Older manifests were sorted using the creating machine's locale.
+  if (JSON.stringify(actual) !== JSON.stringify(source.files.toSorted(byPath)))
     throw new Error('Backup checksum verification failed');
-  await assertAttachmentsPresent(join(path, 'payload'), actual);
+  await assertAttachmentsPresent(payload, actual);
   return source;
 }
 
@@ -106,23 +125,26 @@ export async function restoreBackup(
   path: string,
   freshRoot: string,
 ): Promise<void> {
-  await verifyBackup(path);
-  await assertAbsent(resolve(freshRoot));
-  await mkdir(dirname(resolve(freshRoot)), { recursive: true });
-  await mkdir(resolve(freshRoot), { mode: 0o700 });
-  // Copy children so a backup's outer directory mode cannot weaken this root.
-  const payload = join(resolve(path), 'payload');
-  for (const name of await readdir(payload))
-    await cp(join(payload, name), join(resolve(freshRoot), name), {
-      recursive: true,
-      errorOnExist: true,
-      force: false,
-    });
+  const target = resolve(freshRoot);
+  await assertAbsent(target);
+  await mkdir(dirname(target), { recursive: true });
+  const stage = await mkdtemp(`${target}.`);
+  try {
+    // The private stage owns its mode, regardless of the payload directory's mode.
+    await cp(join(resolve(path), 'payload'), stage, { recursive: true });
+    await verifyBackup(path, stage);
+    await assertAbsent(target);
+    await rename(stage, target);
+  } catch (error) {
+    await rm(stage, { recursive: true, force: true });
+    throw error;
+  }
 }
 
 export async function doctor(
   root: string,
   databasePath: string,
+  environment: NodeJS.ProcessEnv = process.env,
 ): Promise<{
   ok: boolean;
   findings: string[];
@@ -139,22 +161,37 @@ export async function doctor(
     loginEnabled = (await authored.validateRequired()).application.loginEnabled;
   } catch (error) {
     findings.push(
-      `Authored state: ${error instanceof Error ? error.message : String(error)}`,
+      `Configuration: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  let tls: ReturnType<typeof listenerSettings>['tls'];
+  try {
+    tls = listenerSettings(root, loginEnabled, environment).tls;
+  } catch (error) {
+    findings.push(
+      `Listener: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
   // An empty collection is a healthy fresh install; creation belongs to the operator.
   try {
-    const bots = await authored.listBots();
     const entries = await readdir(join(root, 'bots'), { withFileTypes: true });
-    if (bots.length === 0 && entries.some((entry) => entry.isDirectory()))
-      findings.push('No readable bot in bots/');
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (!slug.safeParse(entry.name).success) {
+        findings.push(`Invalid bot directory name: bots/${entry.name}`);
+        continue;
+      }
+      try {
+        await authored.readBot(entry.name);
+      } catch {
+        findings.push(`Unreadable bot card: bots/${entry.name}`);
+      }
+    }
   } catch {
     findings.push('Missing or unreadable: bots/');
   }
-  if (loginEnabled) {
-    const keyPath = process.env[ENV.tlsKey] ?? join(root, 'data/tls/key.pem');
-    const certificatePath =
-      process.env[ENV.tlsCert] ?? join(root, 'data/tls/cert.pem');
+  if (tls) {
+    const { key: keyPath, cert: certificatePath } = tls;
     let key: ReturnType<typeof createPrivateKey> | undefined;
     try {
       key = createPrivateKey(await readFile(keyPath));
@@ -235,43 +272,55 @@ async function assertAttachmentsPresent(
 }
 
 async function copyIfPresent(source: string, target: string): Promise<void> {
+  let entry;
   try {
-    const entry = await lstat(source);
-    if (entry.isSymbolicLink())
-      throw new Error(`Backup source is a symlink: ${source}`);
-    await cp(source, target, {
-      recursive: entry.isDirectory(),
-      errorOnExist: true,
-    });
+    entry = await lstat(source);
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
       return;
     throw error;
   }
+  if (entry.isSymbolicLink())
+    throw new Error(`Backup source is a symlink: ${source}`);
+  await cp(source, target, {
+    recursive: entry.isDirectory(),
+    errorOnExist: true,
+  });
 }
 
 async function describeFiles(root: string): Promise<Manifest['files']> {
   const files: Manifest['files'] = [];
   async function walk(parent: string): Promise<void> {
-    for (const entry of (await readdir(parent, { withFileTypes: true })).sort(
-      (a, b) => a.name.localeCompare(b.name),
-    )) {
+    for (const entry of await readdir(parent, { withFileTypes: true })) {
       const path = join(parent, entry.name);
       if (entry.isSymbolicLink())
         throw new Error(`Backup payload contains a symlink: ${path}`);
       if (entry.isDirectory()) await walk(path);
       else if (entry.isFile()) {
-        const data = await readFile(path);
+        const hash = createHash('sha256');
+        const stream = createReadStream(path);
+        await pipeline(stream, hash);
         files.push({
           path: relative(root, path),
-          bytes: (await stat(path)).size,
-          sha256: createHash('sha256').update(data).digest('hex'),
+          bytes: stream.bytesRead,
+          sha256: hash.digest('hex'),
         });
-      }
+      } else
+        throw new Error(
+          `Backup payload contains an unsupported file: ${relative(root, path)}`,
+        );
     }
   }
   await walk(root);
-  return files.sort((a, b) => a.path.localeCompare(b.path));
+  return files.sort(byPath);
+}
+
+function byPath(
+  left: Manifest['files'][number],
+  right: Manifest['files'][number],
+): number {
+  if (left.path === right.path) return 0;
+  return left.path < right.path ? -1 : 1;
 }
 
 async function assertAbsent(path: string): Promise<void> {

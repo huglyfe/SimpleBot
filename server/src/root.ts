@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { constants, existsSync, readFileSync } from 'node:fs';
+import { constants, existsSync, lstatSync, readFileSync } from 'node:fs';
 import { access, cp, mkdir, chmod, lstat } from 'node:fs/promises';
 import { homedir, platform } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -49,12 +49,58 @@ export function resolveRoot(
   if (explicit !== undefined && explicit.length > 0) return resolve(explicit);
   if (
     resolve(cwd) !== resolve(packageRoot) &&
-    existsSync(join(cwd, 'config.json')) &&
-    existsSync(join(cwd, 'bots')) &&
-    existsSync(join(cwd, 'presets'))
+    ['config.json', 'bots', 'presets'].every((name) =>
+      existsSync(join(cwd, name)),
+    )
   )
     return resolve(cwd);
   return defaultRoot(environment);
+}
+
+export function missingRootEntry(root: string): string | undefined {
+  if (
+    !lstatSync(join(root, 'config.json'), { throwIfNoEntry: false })?.isFile()
+  )
+    return 'config.json';
+  for (const name of ['bots', 'presets', 'data']) {
+    if (!lstatSync(join(root, name), { throwIfNoEntry: false })?.isDirectory())
+      return name;
+  }
+  if (
+    !lstatSync(join(root, 'data/app.db'), { throwIfNoEntry: false })?.isFile()
+  )
+    return 'data/app.db';
+  return undefined;
+}
+
+export function listenerSettings(
+  root: string,
+  loginEnabled: boolean,
+  environment: NodeJS.ProcessEnv,
+) {
+  const host = environment[ENV.host] ?? '127.0.0.1';
+  const loopback = host === '127.0.0.1' || host === '::1';
+  if (!loginEnabled && !loopback)
+    throw new Error(
+      `Login-disabled mode requires ${ENV.host}=127.0.0.1 or ::1.`,
+    );
+  if (!loopback && (!environment[ENV.tlsKey] || !environment[ENV.tlsCert]))
+    throw new Error(
+      `Remote access requires ${ENV.tlsKey} and ${ENV.tlsCert}. Use a certificate for your server name that clients trust.`,
+    );
+  const portText = environment[ENV.port] ?? '3000';
+  const port = Number(portText);
+  if (!/^\d+$/u.test(portText) || port > 65535)
+    throw new Error(`${ENV.port} must be an integer between 0 and 65535.`);
+  const tls = loginEnabled
+    ? {
+        key: resolve(environment[ENV.tlsKey] ?? join(root, 'data/tls/key.pem')),
+        cert: resolve(
+          environment[ENV.tlsCert] ?? join(root, 'data/tls/cert.pem'),
+        ),
+      }
+    : undefined;
+  return { host, port, tls };
 }
 
 /** The OS-appropriate operator data location for a packaged installation. */

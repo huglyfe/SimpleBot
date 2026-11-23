@@ -105,7 +105,6 @@ export async function assembleAttempt(
     previousUserMessageAt,
     targetSource,
     targetAttachments,
-    attachmentStorageKeys,
   } = snapshot;
   const capabilities = options.capabilities.select(authored.bot.capabilities);
   const limits = authored.config.application;
@@ -145,18 +144,9 @@ export async function assembleAttempt(
   }
   // The snapshot holds only what no committed leaf covers, so every position
   // it carries is already in the live region.
-  const attachmentIds = model.input.includes('image')
-    ? session.positions.flatMap((position) =>
-        position.role === 'user'
-          ? position.attachments.map((attachment) => attachment.id)
-          : [],
-      )
-    : [];
+  const imageFiles = model.input.includes('image') ? session.imageFiles : [];
   const imageEntries = await Promise.all(
-    attachmentIds.map(async (id) => {
-      const storageKey = attachmentStorageKeys.get(id);
-      if (storageKey === undefined)
-        throw new Error('Attachment is unavailable');
+    imageFiles.map(async ({ id, storageKey }) => {
       return [
         id,
         (await options.storage.readAttachmentFile(storageKey)).toString(
@@ -257,8 +247,8 @@ function compileAssemblyContext(input: {
   tools: readonly AttemptTool[];
 }): Context {
   const expand = createPromptExpander({
-    bot: input.authored.writing.name,
-    user: input.authored.preset.persona.name,
+    card: input.authored.writing,
+    persona: input.authored.preset.persona,
     model: input.modelId,
     now: input.now,
     timezone: input.authored.config.application.timezone,

@@ -210,6 +210,7 @@ describe('Conversation', () => {
       ).not.toBeInTheDocument(),
     );
     expect(screen.getByLabelText('Stop response')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Next variant/ })).toBeDisabled();
     expect(api.cancelAttempt).not.toHaveBeenCalled();
     api.getSession.mockResolvedValue(
       projection([userPosition('go'), assistant('Finished away.')], sessionId),
@@ -218,11 +219,12 @@ describe('Conversation', () => {
       await screen.findByText('Finished away.', {}, { timeout: 2_000 }),
     ).toBeVisible();
     expect(screen.queryByLabelText('Stop response')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next variant' })).toBeEnabled();
   });
 
   it('keeps queued work in the composer instead of creating transcript rows', async () => {
     const user = userEvent.setup();
-    await renderConversation();
+    await renderConversation([assistant('Earlier answer.')]);
     api.streamAttempt.mockImplementation(
       (
         _sessionId: string,
@@ -241,7 +243,9 @@ describe('Conversation', () => {
     await user.click(screen.getByLabelText('Send message'));
 
     expect(screen.getByLabelText('Message')).toHaveValue('still mine');
-    expect(document.querySelectorAll('.msg-row')).toHaveLength(0);
+    expect(document.querySelectorAll('.msg-row')).toHaveLength(1);
+    expect(screen.getByText('Earlier answer.')).toBeVisible();
+    expect(screen.getByRole('button', { name: /Edit message/ })).toBeDisabled();
     expect(screen.getByLabelText('Stop response')).toBeInTheDocument();
   });
 

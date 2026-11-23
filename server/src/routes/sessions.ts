@@ -53,7 +53,7 @@ export function registerSessionRoutes(
 
   app.post('/api/sessions', async (request, reply) => {
     const body = createSessionRequestSchema.parse(request.body);
-    const presetSlug = await ctx.authored.resolveSessionPreset(
+    const opening = await ctx.authored.readSessionOpening(
       body.botSlug,
       body.presetSlug,
     );
@@ -61,8 +61,7 @@ export function registerSessionRoutes(
     const session = ctx.storage.createSession({
       id: randomUUID(),
       botSlug: body.botSlug,
-      presetSlug,
-      greetings: await ctx.authored.readGreetings(body.botSlug),
+      ...opening,
       now: createdAt,
     });
     return reply.code(201).send({

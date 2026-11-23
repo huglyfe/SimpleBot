@@ -228,7 +228,7 @@ test('a missing required authored file is reported by path, not by errno', async
   const authored = new AuthoredFiles(fixture.root);
 
   await assert.rejects(
-    authored.readGreetings('absent'),
+    authored.readSessionOpening('absent'),
     /bots[/\\]absent.*required but missing/u,
   );
 });

@@ -597,7 +597,15 @@ test('variable macros read current session state at assembly', async (context) =
   const preset = JSON.parse(await readFile(presetPath, 'utf8')) as {
     prompts: { system: string };
   };
-  preset.prompts.system = '{{getvar::mood}}\n{{listvars}}';
+  fixture.runtime.storage.setVariable(session.id, 'empty', '', now);
+  fixture.runtime.storage.setVariable(
+    session.id,
+    'quoted',
+    '{{char}} <user>',
+    now,
+  );
+  preset.prompts.system =
+    '{{getvar mood}}/{{getvar::mood}}/{{hasvar::empty}}/{{hasvar::missing}}/{{description}}/{{bot}}/{{getvar quoted}}';
   await writeFile(presetPath, JSON.stringify(preset));
   const admitted = admitReply(fixture, session.id, 'Now', now);
 
@@ -610,5 +618,8 @@ test('variable macros read current session state at assembly', async (context) =
     models: fixture.models,
     now: new Date(now),
   });
-  assert.match(assembly.context.systemPrompt ?? '', /bright\nmood: bright/u);
+  assert.match(
+    assembly.context.systemPrompt ?? '',
+    /bright\/bright\/true\/false\/Echo description\/\{\{bot\}\}\/\{\{char\}\} <user>/u,
+  );
 });

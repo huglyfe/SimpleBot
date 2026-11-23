@@ -175,6 +175,15 @@ test('unsafe listener configurations refuse before opening SQLite or activating 
     1,
   );
   assert.match(io.errors.join('\n'), /Remote access requires/u);
+  const diagnosis = recorder();
+  assert.equal(
+    await runCli(['doctor'], diagnosis, {
+      SIMPLEBOT_ROOT: root,
+      SIMPLEBOT_HOST: '0.0.0.0',
+    }),
+    1,
+  );
+  assert.match(diagnosis.lines.join('\n'), /Remote access requires/u);
   assert.equal(existsSync(marker), false);
   assert.equal(existsSync(join(root, 'data/app.db')), false);
 });
@@ -392,6 +401,14 @@ test('data removal requires the exact root and removes nothing otherwise', async
   await mkdir(join(root, 'bots'), { recursive: true });
   await writeFile(join(root, 'config.json'), '{}');
 
+  const unrelated = recorder(root);
+  assert.equal(
+    await runCli(['remove-data'], unrelated, { SIMPLEBOT_ROOT: root }),
+    1,
+  );
+  assert.match(unrelated.errors.join('\n'), /presets/u);
+  assert.ok(existsSync(join(root, 'config.json')));
+  assert.equal(await runCli(['init'], recorder(), { SIMPLEBOT_ROOT: root }), 0);
   const refused = recorder('yes');
   assert.equal(
     await runCli(['remove-data'], refused, { SIMPLEBOT_ROOT: root }),
@@ -399,6 +416,19 @@ test('data removal requires the exact root and removes nothing otherwise', async
   );
   assert.ok(existsSync(join(root, 'config.json')));
   assert.match(refused.errors.join('\n'), /Nothing was removed/u);
+
+  const active = await createTestFixture();
+  try {
+    const locked = recorder(active.root);
+    assert.equal(
+      await runCli(['remove-data'], locked, { SIMPLEBOT_ROOT: active.root }),
+      1,
+    );
+    assert.match(locked.errors.join('\n'), /runtime owns this root/u);
+    assert.ok(existsSync(join(active.root, 'data/app.db')));
+  } finally {
+    await active.runtime.close();
+  }
 
   const confirmed = recorder(root);
   assert.equal(

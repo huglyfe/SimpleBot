@@ -73,7 +73,7 @@ export function Conversation({
   const latest = query.data?.positions.findLast(
     (position) => position.role === 'assistant',
   );
-  // undefined until the first read, which the header's own query covers.
+  // undefined until the first read, which an open Context panel makes itself.
   const usageKey =
     query.data === undefined
       ? undefined
@@ -330,6 +330,7 @@ export function Conversation({
     return <main className="empty-state">Loading conversation…</main>;
   if (query.data === undefined) return <main className="empty-state" />;
 
+  const busy = live !== null || query.data.activeAttemptId !== null;
   return (
     <main className="conversation">
       <Transcript
@@ -341,6 +342,7 @@ export function Conversation({
         onReachLiveEdge={collapse}
         ttsConfigured={ttsConfigured}
         botName={botName}
+        busy={busy}
         live={live === 'pending' ? null : live}
         update={update}
         onAction={onAction}
@@ -349,7 +351,7 @@ export function Conversation({
       <Composer
         sessionId={sessionId}
         botName={botName}
-        generating={live !== null || query.data.activeAttemptId !== null}
+        generating={busy}
         error={error}
         onDismissError={() => setError(null)}
         onSend={send}

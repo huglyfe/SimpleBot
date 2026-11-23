@@ -36,6 +36,7 @@ export const STORAGE_KEYS = {
   drawer: `${CLIENT_NAMESPACE}-drawer`,
   drawerWidth: `${CLIENT_NAMESPACE}-drawer-width`,
   appearance: `${CLIENT_NAMESPACE}-appearance`,
+  accent: `${CLIENT_NAMESPACE}-accent`,
 } as const;
 
 /**

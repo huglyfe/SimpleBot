@@ -10,18 +10,39 @@ import { AppShell, PHONE_QUERY } from './AppShell.js';
 
 vi.mock('../../api.js', () => ({
   searchSessions: vi.fn(),
-  getContext: vi.fn(async () => ({
-    compactionThresholdTokens: 10_000,
-    lastRequestUsage: {
-      input: 1_000,
-      output: 300,
-      cacheRead: 6_000,
-      cacheWrite: 500,
-      totalTokens: 7_800,
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
-    },
-  })),
+  getPresetDocument: vi.fn(),
 }));
+
+/** A loaded transcript whose newest reply reports this much cached input. */
+function loadedReply(client: QueryClient, cacheRead: number): void {
+  client.setQueryData(['session', 'session-1'], {
+    positions: [
+      {
+        role: 'assistant',
+        variant: {
+          source: 'Hello',
+          provider: 'anthropic',
+          usage: [
+            {
+              input: 1_000,
+              output: 300,
+              cacheRead,
+              cacheWrite: 500,
+              totalTokens: 0,
+              cost: {
+                input: 0,
+                output: 0,
+                cacheRead: 0,
+                cacheWrite: 0,
+                total: 0,
+              },
+            },
+          ],
+        },
+      },
+    ],
+  });
+}
 
 const data: Bootstrap = {
   version: '0.10.0',
@@ -58,7 +79,9 @@ function renderShell({
   onOpenCapabilities = noop,
   onOpenConversation = noop,
   onOpenPreset = noop,
+  client = new QueryClient(),
 }: {
+  client?: QueryClient;
   bootstrap?: Bootstrap;
   onAddBot?: (name: string, file?: File) => Promise<void>;
   onRenameSession?: (id: string, title: string) => Promise<void>;
@@ -67,11 +90,13 @@ function renderShell({
   onOpenPreset?: () => void;
 } = {}) {
   return render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={client}>
       <AppShell
         data={bootstrap}
-        activeSessionId="session-1"
-        activeBotSlug="seraphina"
+        activeSession={bootstrap.sessions.find(
+          (session) => session.id === 'session-1',
+        )}
+        bot={bootstrap.bots.find((bot) => bot.slug === 'seraphina')}
         onSelectSession={noop}
         onNewConversation={noop}
         onRenameSession={onRenameSession}
@@ -231,7 +256,7 @@ describe('AppShell drawer', () => {
     setViewport(false);
     renderShell();
 
-    // Open: the close X lives inside the drawer and the header hamburger is gone.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     const close = screen.getByRole('button', { name: 'Close conversations' });
     expect(
       screen.getByRole('navigation', { name: 'Conversations' }),
@@ -327,16 +352,6 @@ describe('AppShell drawer', () => {
     ).toBeInTheDocument();
   });
 
-  it('persists beside the conversation on desktop rather than overlaying', () => {
-    setViewport(false);
-    renderShell();
-
-    expect(
-      screen.getByRole('navigation', { name: 'Conversations' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
   it('keeps Conversation and Preset as distinct header controls', async () => {
     setViewport(false);
     const onOpenConversation = vi.fn();
@@ -365,36 +380,32 @@ describe('AppShell drawer', () => {
     ).toHaveTextContent('Seraphina');
   });
 
-  it('reports prompt tokens against the compaction threshold on the context ring', async () => {
+  it('fills the context ring from the loaded reply and warns once it reaches the preset threshold', async () => {
     setViewport(false);
-    renderShell();
+    vi.mocked(api.getPresetDocument).mockResolvedValue({
+      value: { context: { thresholdTokens: 10_000 } },
+    } as Awaited<ReturnType<typeof api.getPresetDocument>>);
+    const client = new QueryClient();
+    loadedReply(client, 6_000);
+    renderShell({ client });
 
     const controls = screen.getByRole('button', {
       name: 'Conversation controls',
     });
     await waitFor(() =>
       expect(controls).toHaveAccessibleDescription(
-        'Context 7,500 of 10,000 tokens before compaction',
+        'Context 7,500 of 10,000 input tokens',
       ),
     );
-  });
+    expect(controls.querySelector('.is-full')).toBeNull();
 
-  it('names the global destinations without a Tools surface', () => {
-    setViewport(false);
-    renderShell();
-
-    expect(
-      screen.getByRole('button', { name: 'Providers and keys' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Capabilities' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Application settings' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Tools and skills' }),
-    ).not.toBeInTheDocument();
+    loadedReply(client, 9_000);
+    await waitFor(() =>
+      expect(controls).toHaveAccessibleDescription(
+        'Context 10,500 of 10,000 input tokens · compacts on next message',
+      ),
+    );
+    expect(controls.querySelector('.is-full')).not.toBeNull();
   });
 
   it('preserves phone navigation after opening Capabilities', async () => {

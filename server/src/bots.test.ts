@@ -60,7 +60,7 @@ test('bot defaults are chosen once by display name and slug, preserved on import
   });
   assert.equal(created.statusCode, 201, created.body);
   assert.equal(
-    await authored.resolveSessionPreset('new-default', undefined),
+    (await authored.readSessionOpening('new-default')).presetSlug,
     'a-first',
   );
   const imported = card('No default');
@@ -93,7 +93,8 @@ test('bot defaults are chosen once by display name and slug, preserved on import
     data: Buffer.from(JSON.stringify(card('Explicit default'))),
   });
   assert.equal(
-    await authored.resolveSessionPreset('explicit-default', undefined),
+    (await authored.readSessionOpening('explicit-default', undefined))
+      .presetSlug,
     'default',
   );
   const before = await fixture.runtime.app.inject({
@@ -127,13 +128,10 @@ test('bot defaults are chosen once by display name and slug, preserved on import
       .find((session) => session.id === sessionId)?.presetSlug,
     'a-first',
   );
-  assert.equal(
-    await new AuthoredFiles(fixture.root).resolveSessionPreset(
-      'new-default',
-      undefined,
-    ),
-    'a-first',
+  const opening = await new AuthoredFiles(fixture.root).readSessionOpening(
+    'new-default',
   );
+  assert.equal(opening.presetSlug, 'a-first');
 });
 
 test('missing bot defaults require a choice and no valid preset refuses installation before writing files', async (t) => {

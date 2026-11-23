@@ -1,17 +1,4 @@
-/**
- * Per-session composer drafts.
- *
- * Deliberately module-level and ephemeral: a draft and its staged files are
- * per-browser UI state that must survive sheet opens and session switches, and
- * nothing more. They never reach disk and are cleared on a successful send.
- *
- * This is not a second authority. The engine owns nothing here — an unsent
- * draft is not a conversation fact, and losing it on reload is correct.
- *
- * Staged files stay `File` objects rather than the old client's data URLs:
- * `uploadAttachment` reads and base64-encodes at send time, so encoding here
- * would only mean doing it twice.
- */
+import { readStorage, writeStorage } from '../../lib/storage.js';
 
 export interface ComposerDraft {
   draft: string;
@@ -22,10 +9,14 @@ export const MAX_STAGED_FILES = 8;
 export const ACCEPTED_IMAGE_MIMES = ['image/png', 'image/jpeg'] as const;
 const acceptedImageMimes = new Set<string>(ACCEPTED_IMAGE_MIMES);
 
+// Keep files and text across session switches even when tab storage is unavailable.
 const drafts = new Map<string, ComposerDraft>();
 
 export function getDraft(sessionId: string): ComposerDraft | undefined {
-  return drafts.get(sessionId);
+  const current = drafts.get(sessionId);
+  if (current) return current;
+  const draft = readStorage(`simplebot:draft:${sessionId}`, 'sessionStorage');
+  return draft ? { draft, files: [] } : undefined;
 }
 
 export function saveDraft(
@@ -33,6 +24,7 @@ export function saveDraft(
   draft: string,
   files: File[],
 ): void {
+  writeStorage(`simplebot:draft:${sessionId}`, draft || null, 'sessionStorage');
   if (draft.length === 0 && files.length === 0) drafts.delete(sessionId);
   else drafts.set(sessionId, { draft, files });
 }

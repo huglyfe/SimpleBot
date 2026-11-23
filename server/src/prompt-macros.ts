@@ -1,4 +1,9 @@
-import { formatTodoDue, type Todo } from '@simplebot/shared';
+import {
+  formatTodoDue,
+  type Card,
+  type Preset,
+  type Todo,
+} from '@simplebot/shared';
 
 export type PromptExpander = (source: string) => string;
 
@@ -15,8 +20,8 @@ export function formatElapsedDuration(seconds: number): string {
 
 /** One deterministic macro snapshot shared by chat and summarization. */
 export function createPromptExpander(input: {
-  bot: string;
-  user: string;
+  card: Card;
+  persona: Preset['persona'];
   model: string;
   now: Date;
   timezone: string;
@@ -24,10 +29,16 @@ export function createPromptExpander(input: {
   variables: Readonly<Record<string, string>>;
   todos: readonly Todo[];
 }): PromptExpander {
+  const variables = new Map(Object.entries(input.variables));
   const idleDuration = formatIdleDuration(input);
-  const values: Readonly<Record<string, string>> = Object.freeze({
-    char: input.bot,
-    user: input.user,
+  const values: Readonly<Record<string, string>> = {
+    char: input.card.name,
+    user: input.persona.name,
+    persona: input.persona.description,
+    description: input.card.description,
+    personality: input.card.personality,
+    scenario: input.card.scenario,
+    mesexamplesraw: input.card.mes_example,
     model: input.model,
     date: new Intl.DateTimeFormat('en-US', {
       dateStyle: 'long',
@@ -54,29 +65,36 @@ export function createPromptExpander(input: {
                 `${todo.id} — ${todo.title}\n${formatTodoDue(todo.due, input.timezone, input.now)}${todo.note === '' ? '' : `\n${todo.note}`}`,
             )
             .join('\n\n'),
-    listvars: Object.entries(input.variables)
+    listvars: [...variables]
       .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
       .map(([name, value]) => `${name}: ${value}`)
       .join('\n'),
-    ...Object.fromEntries(
-      Object.entries(input.variables).map(([name, value]) => [
-        `var:${name}`,
-        value,
-      ]),
-    ),
-  });
+  };
 
   return (source) =>
-    source
-      .replace(/<(?:char|bot)>/giu, () => input.bot)
-      .replace(/<user>/giu, () => input.user)
-      .replace(
-        /\{\{\s*getvar::([^}]+)\s*\}\}/gu,
-        (_match, name: string) => values[`var:${name.trim()}`] ?? '',
-      )
-      .replace(/\{\{\s*([a-zA-Z_]+)\s*\}\}/gu, (match, name: string) => {
-        return values[name.toLowerCase()] ?? match;
-      });
+    source.replace(
+      /<(?:char|bot|user)>|\{\{\s*(?:(getvar(?:::|\s+)|hasvar::)([^}]+)|([a-z_]+))\s*\}\}/giu,
+      (
+        match,
+        operation: string | undefined,
+        argument: string | undefined,
+        macro: string | undefined,
+      ) => {
+        if (argument !== undefined) {
+          const name = argument.trim();
+          return operation?.toLowerCase() === 'hasvar::'
+            ? String(variables.has(name))
+            : (variables.get(name) ?? '');
+        }
+        if (macro !== undefined) {
+          const value = values[macro.toLowerCase()];
+          return typeof value === 'string' ? value : match;
+        }
+        return match.toLowerCase() === '<user>'
+          ? input.persona.name
+          : input.card.name;
+      },
+    );
 }
 
 function formatIdleDuration(input: {

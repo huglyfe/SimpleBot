@@ -4,6 +4,7 @@ import { Sheet } from '../primitives/Sheet.js';
 import { userEvent } from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { BotCapability } from '@simplebot/shared';
 import { RequestError } from '../../api.js';
 import { BotSheet } from './BotSheet.js';
 
@@ -83,20 +84,7 @@ beforeEach(() => {
       },
     ],
   });
-  getBotDocument.mockImplementation((_path: string) =>
-    Promise.resolve(
-      mergeDocuments(
-        {
-          value: { data: { name: 'Seraphina', first_mes: 'Hello.' } },
-          revision: 'card-1',
-        },
-        {
-          value: { defaultPreset: 'default', capabilities: [] },
-          revision: 'config-1',
-        },
-      ),
-    ),
-  );
+  getBotDocument.mockResolvedValue(botDocument());
 });
 
 describe('BotSheet', () => {
@@ -326,6 +314,7 @@ describe('BotSheet', () => {
     await user.click(screen.getByRole('button', { name: /default/ }));
     await user.type(screen.getByLabelText('Name'), ' edited');
     await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(save).toHaveBeenCalledTimes(1);
     expect(save).toHaveBeenCalledWith(
       'bots/seraphina',
       savedSettings({ defaultPreset: 'default', capabilities: [] }),
@@ -542,22 +531,10 @@ describe('BotSheet', () => {
   });
 
   it('keeps a selected Memory server visible when it leaves the catalog', async () => {
-    getBotDocument.mockImplementation((_path: string) =>
-      Promise.resolve(
-        mergeDocuments(
-          {
-            value: { data: { name: 'Seraphina', first_mes: 'Hello.' } },
-            revision: 'card-1',
-          },
-          {
-            value: {
-              defaultPreset: 'default',
-              capabilities: [{ kind: 'memory', dependency: 'retired-server' }],
-            },
-            revision: 'config-1',
-          },
-        ),
-      ),
+    getBotDocument.mockResolvedValue(
+      botDocument({
+        capabilities: [{ kind: 'memory', dependency: 'retired-server' }],
+      }),
     );
     renderSheet();
 
@@ -580,26 +557,14 @@ describe('BotSheet', () => {
       ],
       capabilities: [],
     });
-    getBotDocument.mockImplementation((_path: string) =>
-      Promise.resolve(
-        mergeDocuments(
-          {
-            value: { data: { name: 'Seraphina', first_mes: 'Hello.' } },
-            revision: 'card-1',
-          },
-          {
-            value: {
-              defaultPreset: 'default',
-              capabilities: [
-                { kind: 'tool', name: 'mcp__removed__weather' },
-                { kind: 'tool', name: 'mcp__offline__weather' },
-                { kind: 'tool', name: 'mcp__changed__retired' },
-              ],
-            },
-            revision: 'config-1',
-          },
-        ),
-      ),
+    getBotDocument.mockResolvedValue(
+      botDocument({
+        capabilities: [
+          'mcp__removed__weather',
+          'mcp__offline__weather',
+          'mcp__changed__retired',
+        ].map((name) => ({ kind: 'tool', name })),
+      }),
     );
     renderSheet();
 
@@ -615,45 +580,14 @@ describe('BotSheet', () => {
     expect(screen.getAllByRole('checkbox', { checked: true })).toHaveLength(3);
   });
 
-  it('writes only the changed authored document', async () => {
-    const user = userEvent.setup();
-    const { save } = renderSheet();
-
-    await user.type(await screen.findByLabelText('Name'), '!');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
-    expect(save).toHaveBeenCalledWith(
-      'bots/seraphina',
-      expect.anything(),
-      'card-1',
-    );
-  });
-
   it('reloads the unified bot document after a conflict', async () => {
     const user = userEvent.setup();
-    let latest = false;
-    getBotDocument.mockImplementation((_path: string) =>
-      Promise.resolve(
-        mergeDocuments(
-          {
-            value: {
-              data: {
-                name: latest ? 'Latest Seraphina' : 'Seraphina',
-                first_mes: 'Hello.',
-              },
-            },
-            revision: latest ? 'card-2' : 'card-1',
-          },
-          {
-            value: {
-              defaultPreset: latest ? 'latest' : 'default',
-              capabilities: [],
-            },
-            revision: latest ? 'config-2' : 'config-1',
-          },
-        ),
-      ),
+    getBotDocument.mockResolvedValueOnce(botDocument()).mockResolvedValue(
+      botDocument({
+        name: 'Latest Seraphina',
+        defaultPreset: 'latest',
+        revision: 'card-2',
+      }),
     );
     const save = vi.fn<SaveDocument>(() =>
       Promise.reject(new RequestError('Card changed on disk', 409)),
@@ -665,7 +599,6 @@ describe('BotSheet', () => {
       0,
     );
 
-    latest = true;
     await user.click(screen.getByRole('button', { name: 'Reload latest' }));
     await waitFor(() =>
       expect(screen.getByLabelText('Name')).toHaveValue('Latest Seraphina'),
@@ -687,24 +620,31 @@ describe('BotSheet', () => {
   });
 });
 
-function mergeDocuments(
-  card: { value: { data: Record<string, unknown> }; revision: string },
-  settings: { value: Record<string, unknown>; revision: string },
-) {
+function botDocument({
+  name = 'Seraphina',
+  revision = 'card-1',
+  defaultPreset = 'default',
+  capabilities = [],
+}: {
+  name?: string;
+  revision?: string;
+  defaultPreset?: string;
+  capabilities?: BotCapability[];
+} = {}): Awaited<ReturnType<typeof import('../../api.js').getBotDocument>> {
   return {
-    ...card,
+    revision,
     value: {
-      ...card.value,
+      spec: 'chara_card_v3',
+      spec_version: '3.0',
       data: {
-        ...card.value.data,
-        extensions: {
-          ...(card.value.data.extensions ?? {}),
-          simplebot: settings.value,
-        },
+        name,
+        first_mes: 'Hello.',
+        extensions: { simplebot: { defaultPreset, capabilities } },
       },
     },
   };
 }
+
 function savedCard(value: { data: Record<string, unknown> }) {
   return containing({
     data: containing({

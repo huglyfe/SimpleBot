@@ -7,6 +7,7 @@ import { openDatabase } from './database.js';
 import { acquireRuntimeOwnership } from './runtime-ownership.js';
 import {
   MAX_TODOS,
+  scheduleWriteSchema,
   todoSchema,
   todoUpdateSchema,
   type Todo,
@@ -40,7 +41,6 @@ import {
   decodeSchedule,
   inspectImage,
   nextCronRun,
-  parseScheduleEffect,
   placeholders,
   sessionDisplayTitleSql,
   type AttachmentRow,
@@ -86,6 +86,7 @@ export interface StoredSession {
   createdAt: string;
   updatedAt: string;
   positions: ContextPosition[];
+  imageFiles: { id: string; storageKey: string }[];
   leaves: CommittedLeaf[];
 }
 
@@ -117,7 +118,6 @@ export interface AttemptStorageSnapshot {
   previousUserMessageAt: string | null;
   targetSource: string;
   targetAttachments: StoredAttachment[];
-  attachmentStorageKeys: ReadonlyMap<string, string>;
 }
 
 export interface ExternalEffectOutcome {
@@ -372,7 +372,7 @@ export class Storage {
         title: session.title,
         createdAt: session.created_at,
         updatedAt: session.updated_at,
-        positions: this.#positions(
+        ...this.#positions(
           sessionId,
           {
             where: 'p.ordinal > ?',
@@ -498,23 +498,6 @@ export class Storage {
         user?.role !== 'user'
       )
         return null;
-      const attachmentIds = session.positions.flatMap((position) =>
-        position.role === 'user'
-          ? position.attachments.map((attachment) => attachment.id)
-          : [],
-      );
-      const rows =
-        attachmentIds.length === 0
-          ? []
-          : (this.statements(
-              `SELECT id, storage_key
-               FROM attachments
-               WHERE session_id = ?
-                 AND id IN (${placeholders(attachmentIds)})`,
-            ).all(sessionId, ...attachmentIds) as {
-              id: string;
-              storage_key: string;
-            }[]);
       return {
         session,
         variables: this.sessionVariables(sessionId),
@@ -525,9 +508,6 @@ export class Storage {
         ),
         targetSource: user.source,
         targetAttachments: user.attachments,
-        attachmentStorageKeys: new Map(
-          rows.map((row) => [row.id, row.storage_key]),
-        ),
       };
     })();
   }
@@ -644,10 +624,8 @@ export class Storage {
     now: string,
   ): string {
     const session = this.statements(
-      `SELECT COALESCE(MAX(p.ordinal), -1) + 1 AS user_ordinal
-       FROM sessions s
-       LEFT JOIN message_positions p ON p.session_id = s.id
-       WHERE s.id = ? GROUP BY s.id`,
+      `SELECT COALESCE((SELECT MAX(ordinal) FROM message_positions WHERE session_id = s.id), -1) + 1 AS user_ordinal
+       FROM sessions s WHERE s.id = ?`,
     ).get(sessionId) as { user_ordinal: number } | undefined;
     if (session === undefined)
       throw new StorageNotFoundError('Session not found');
@@ -912,7 +890,7 @@ export class Storage {
             this.updateTodo(sessionId, todoUpdateSchema.parse(arguments_), now);
             this.#completeEffect(effect.id, 'applied', 'Updated to-do', now);
           } else if (effect.type === 'schedule_set') {
-            const schedule = parseScheduleEffect(arguments_);
+            const schedule = scheduleWriteSchema.parse(arguments_);
             this.putSchedule(
               {
                 ...schedule,
@@ -1211,13 +1189,21 @@ export class Storage {
     sessionId: string,
     query: PositionQuery,
     inspect: false,
-  ): ContextPosition[];
+  ): Pick<StoredSession, 'positions' | 'imageFiles'>;
   #positions(sessionId: string, query: PositionQuery): MessagePosition[];
   #positions(
     sessionId: string,
     query: PositionQuery,
     inspect = true,
-  ): ContextPosition[] {
+  ): MessagePosition[] | Pick<StoredSession, 'positions' | 'imageFiles'> {
+    const scope = `WHERE p.session_id = ? AND ${query.where}
+      ORDER BY p.ordinal ${query.order ?? 'ASC'}
+      ${query.limit === undefined ? '' : 'LIMIT ?'}`;
+    const parameters = [
+      sessionId,
+      ...query.parameters,
+      ...(query.limit === undefined ? [] : [query.limit]),
+    ];
     const rows = this.statements(
       `SELECT
         p.id AS position_id,
@@ -1245,22 +1231,27 @@ export class Storage {
         }
       FROM message_positions p
       LEFT JOIN message_variants v ON v.id = p.selected_variant_id
-      WHERE p.session_id = ? AND ${query.where}
-      ORDER BY p.ordinal ${query.order ?? 'ASC'}
-      ${query.limit === undefined ? '' : 'LIMIT ?'}`,
-    ).all(
-      sessionId,
-      ...query.parameters,
-      ...(query.limit === undefined ? [] : [query.limit]),
-    ) as PositionVariantRow[];
-    if (rows.length === 0) return [];
-
-    const positionIds = rows.map((row) => row.position_id);
-    const variantIds = rows
-      .map((row) => row.variant_id)
-      .filter((value): value is string => value !== null);
+      ${scope}`,
+    ).all(...parameters) as PositionVariantRow[];
+    const attachments = this.statements(
+      `SELECT id, position_id, storage_key, filename, mime_type, byte_size, width, height
+       FROM attachments WHERE session_id = ? AND position_id IN (
+         SELECT p.id FROM message_positions p ${scope}
+       ) ORDER BY rowid`,
+    ).all(sessionId, ...parameters) as AttachmentRow[];
+    if (!inspect)
+      return {
+        positions: decodeContextPositions(rows, attachments),
+        imageFiles: attachments.map((row) => ({
+          id: row.id,
+          storageKey: row.storage_key,
+        })),
+      };
+    const variantIds = rows.flatMap((row) =>
+      row.variant_id === null ? [] : [row.variant_id],
+    );
     const effects =
-      !inspect || variantIds.length === 0
+      variantIds.length === 0
         ? []
         : (this.statements(
             `SELECT id, variant_id, ordinal, type, arguments_json, state, result
@@ -1268,16 +1259,7 @@ export class Storage {
              WHERE session_id = ? AND variant_id IN (${placeholders(variantIds)})
              ORDER BY position_id, ordinal`,
           ).all(sessionId, ...variantIds) as EffectRow[]);
-    const attachments = this.statements(
-      `SELECT id, position_id, storage_key, filename, mime_type,
-              byte_size, width, height
-       FROM attachments
-       WHERE session_id = ? AND position_id IN (${placeholders(positionIds)})
-       ORDER BY rowid`,
-    ).all(sessionId, ...positionIds) as AttachmentRow[];
-    return inspect
-      ? decodePositions(rows, effects, attachments)
-      : decodeContextPositions(rows, attachments);
+    return decodePositions(rows, effects, attachments);
   }
 
   /** The newest committed leaves admitted by the cap, in context order. */
@@ -1457,7 +1439,7 @@ export class Storage {
       },
       false,
     )
-      .map((position) => {
+      .positions.map((position) => {
         if (position.role === 'user') {
           const images = position.attachments
             .map((attachment) => `[Image attachment: ${attachment.filename}]`)

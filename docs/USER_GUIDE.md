@@ -77,7 +77,7 @@ When you press Send, SimpleBot does this:
 7. Read tools, ordinary MCP calls, and Docker commands return direct results during generation. Internal writes and Memory retention become candidate effects on that variant.
 8. Acceptance applies selected candidate effects once, in order. A failure is recorded and the remaining effects continue. Nothing retries automatically.
 
-A rejection before admission leaves the draft with the client. After admission, the canonical response stays in the transcript; swipe the response to retry. Once the server queues a send, closing the browser does not cancel it. Reopening the conversation shows the saved response, or waits for the queued or running work to finish. Explicit Stop still cancels.
+A rejection before admission leaves the draft with the client. After admission, the canonical response stays in the transcript; swipe the response to retry. Once the server queues a send, closing the browser does not cancel it. Reopening the conversation shows the saved response, or waits for the queued or running work to finish. Explicit Stop still cancels. Message editing and swipe controls become available again when the attempt ends, subject to the position’s lock.
 
 ### Calls and accepted effects
 
@@ -132,7 +132,7 @@ Your conversations, bots, presets, and credentials live in the operator root, ou
 
 Set `SIMPLEBOT_ROOT` to put it somewhere else. On macOS/Linux, new roots are created with mode 0700. Existing roots must be owned by the running user and exclude group/other access; symlink roots are refused. If an existing root fails this check, inspect the exact path and set its directory permissions to 0700 yourself. SimpleBot never changes existing permissions automatically. Windows operators must restrict the root ACL. Keep parent directories under your control. If a non-package working directory already contains a complete SimpleBot root with `config.json`, `bots/`, and `presets/`, the CLI keeps using it. A generic project `config.json` does not attract SimpleBot data, and the package or source checkout is never adopted as the root.
 
-Updating or uninstalling SimpleBot replaces program code only. `simplebot remove-data` is the one command that deletes the root, and it makes you type the path first.
+Updating or uninstalling SimpleBot replaces program code only. `simplebot remove-data` is the one command that deletes the root, and it requires a private, recognizable root (a config file, bot and preset directories, and a database) and asks you to type its exact path. Stop the server first.
 
 ### Commands
 
@@ -195,13 +195,13 @@ Open your server using trusted HTTPS. In Safari on iPhone/iPad, use **Share → 
 
 Open the installed app and pair if asked. Under **Application → Login management**, choose **Set privacy PIN**, enter a 4–20 digit PIN twice, then **Save privacy PIN**. The pairing code establishes your server login; this separate privacy PIN stays the same until you change or remove it (or clear site data). Configure it inside the installed app: its storage and login state may differ from your ordinary browser. PIN changes save through their own dialog, independently of other application settings.
 
-With a PIN enabled, launch and reload require unlocking. Switching away immediately hides the screen and stops message audio; returning after 30 seconds requires the PIN again. **Lock now** locks and stops message audio immediately. Locking keeps your current draft and lets server-side replies finish. Reloading or closing still loses unsent drafts. **Change privacy PIN** and **Remove privacy PIN** require your current PIN.
+With a PIN enabled, launch and reload require unlocking. Switching away immediately hides the screen and stops message audio; returning after 30 seconds requires the PIN again. **Lock now** locks and stops message audio immediately. Locking keeps your current draft and lets server-side replies finish. Unsent message text survives reloads in the same tab. Reattach staged images after reloading. **Change privacy PIN** and **Remove privacy PIN** require your current PIN.
 
 The privacy PIN is entirely client-side: it hides the interface from casual viewing. Someone controlling the browser can bypass it using browser tools or local storage, including in an installed PWA. This is an intentional limit. Pairing and the server-validated login cookie provide real server authentication. The PIN does not encrypt chats, revoke that cookie, prevent API access with a valid login, or guarantee concealment in OS screenshots and app-switcher previews. If you forget the PIN, clear the app’s site data, then pair and configure it again. This removes local preferences and cached interface files, not server conversations. Reinstalling alone may not clear site data.
 
 After a successful online load, the service worker caches only the interface and app icons. When the server cannot be reached, the app can still open to its lock screen; after unlocking it reports the connection problem. Reconnect and choose **Retry**. Conversations, bot artwork, attachments, and audio are not stored in the service-worker cache, and messages are never queued for later sending. Browser eviction can remove cached assets, so offline launch is not guaranteed indefinitely.
 
-Updates apply on their own: when a new version is installed on the server, a window picks it up a moment after it next loads, and a window left open picks it up once the browser rechecks, about daily; each open window then reloads onto it. Unsent drafts and unsaved edits in a reloading window are lost; server replies continue. If the app ever shows **Unable to load**, choose **Reload**. Remove the installation through the OS/browser, and clear site data if you also want to remove its PIN, cookie, and offline assets. Server data remains untouched.
+Updates apply on their own: when a new version is installed on the server, a window picks it up a moment after it next loads, and a window left open picks it up once the browser rechecks, about daily; each open window then reloads onto it. The composer restores its text after the update. Staged images and unsaved panel edits are lost; server replies continue. If the app ever shows **Unable to load**, choose **Reload**. Remove the installation through the OS/browser, and clear site data if you also want to remove its PIN, cookie, and offline assets. Server data remains untouched.
 
 ## Set up a provider and start talking
 
@@ -268,7 +268,7 @@ The drawer footer opens:
 
 - **Providers and keys** for model and speech connections;
 - **Capabilities** for root MCP, Memory, and Docker configuration and status;
-- **Application settings** for global behavior, appearance, login, and source information.
+- **Application settings** for global behavior, appearance and accent colour, login, and source information. Appearance and accent are remembered per browser and apply when you save the panel.
 
 On phones, settings open over the drawer. Closing settings returns to the same drawer and search; selecting or starting a conversation closes the drawer.
 
@@ -276,7 +276,7 @@ On phones, settings open over the drawer. Closing settings returns to the same d
 
 If a bot card becomes unreadable or disappears, its saved conversations remain listed under the bot slug. Context and speech remain available when the session preset and root config are valid. Opening Bot settings reports the card error.
 
-The ring at the right of the header opens **Conversation controls**. It fills as the newest selected reply's prompt approaches the preset's compaction threshold and turns violet when it reaches it: accepting that reply, usually by sending your next message, compacts older exchanges when any are outside the live tail. It changes when a reply finishes, when you select another swipe, or when the conversation's preset or threshold changes, never while you type. After **Compact now** it stays full until the next reply measures the smaller prompt. The tune icon beside it opens the conversation's preset.
+The ring at the right of the header opens **Conversation controls**. It fills as the newest selected reply's input tokens approach the preset's compaction threshold and turns amber when it reaches it: accepting that reply, usually by sending your next message, compacts older exchanges when any are outside the live tail. It changes when a reply finishes, when you select another swipe, or when the conversation's preset or threshold changes, never while you type. After **Compact now** it stays full until the next reply measures the smaller prompt. The tune icon beside it opens the conversation's preset.
 
 The centered bot portrait and name open identity, default preset, capabilities, writing, and greetings. Default preset belongs only to the bot. New bots and imported cards without a selection receive the first available preset alphabetically by display name; that choice is saved once and can be changed in Bot settings. Click artwork for a larger view. **Add image** or **Change image** selects a PNG and saves it immediately (up to 10 MB, within the configured image-dimension limit). Image changes are independent of the panel’s Save/Discard controls: discarding text edits keeps the new image. Failed uploads retain the previous image. Settings rows show a title and preview; click a row to edit it. Editable rows sit in one rounded group separated by thin lines, with **Add** at the foot of the group. Red trash controls ask before deleting. Empty bot System and Post-history prompts display Uses preset. Provider rows show URLs and model counts; dependency rows show availability and MCP tool counts, with available entries in green.
 
@@ -369,7 +369,7 @@ The three-dot menu beside the preset selector contains Clone, Rename, and Delete
 
 ### Prompt macros
 
-SimpleBot expands a small deterministic macro set in bot and preset text when it assembles an attempt. [Prompt macros](MACROS.md) lists every supported macro and what it expands to.
+SimpleBot expands a small deterministic macro set in bot and preset text when it assembles an attempt. Use `{{persona}}` or `{{description}}` to insert authored text, and `{{hasvar::name}}` to check whether the conversation has a variable. [Prompt macros](MACROS.md) lists every supported macro and what it expands to.
 
 Macro expansion reads state but never writes it. Use variable tools for writes. Every swipe and new attempt assembles again, so it sees the accepted values and time for that attempt.
 
@@ -842,7 +842,7 @@ This is container access, not native host shell access. You own the container im
 
 ### Schedules
 
-Schedules belong to one conversation. Each has a name, cron expression, prompt, and enabled state. Every schedule follows the current application timezone, so changing that one setting immediately moves their next wall-clock occurrences together. **Next run** is displayed in that timezone.
+Schedules belong to one conversation. Each has a name, cron expression, prompt, and enabled state. Operator edits and bot-created schedules both require a nonblank name, expression, and prompt. Every schedule follows the current application timezone, so changing that one setting immediately moves their next wall-clock occurrences together. **Next run** is displayed in that timezone.
 
 When a schedule becomes due, SimpleBot adds one ordinary attempt for that conversation to the global in-process input queue. Occurrences missed while the host is stopped are lost. Startup schedules only future occurrences.
 
@@ -864,7 +864,7 @@ The transcript renders that as a quiet scheduled event followed by the bot's ans
 | --- | --- | --- |
 | `SIMPLEBOT_ROOT` | Existing non-package root in the current directory, otherwise the OS data location | Mutable config, authored files, database, attachments, and TLS. |
 | `SIMPLEBOT_HOST` | `127.0.0.1` | Address the built server binds. |
-| `SIMPLEBOT_PORT` | `3000` | HTTPS or HTTP port. |
+| `SIMPLEBOT_PORT` | `3000` | HTTPS or HTTP port (decimal integer from 0 through 65535). |
 | `SIMPLEBOT_TLS_KEY` | `<root>/data/tls/key.pem` | Custom private key when login is enabled. |
 | `SIMPLEBOT_TLS_CERT` | `<root>/data/tls/cert.pem` | Custom certificate when login is enabled. |
 
@@ -947,7 +947,7 @@ The command creates a staged backup, verifies it, and publishes it only after ve
 - cached speech files;
 - default TLS files beneath the root.
 
-The manifest lists each file, byte count, and SHA-256 checksum.
+On success, both `backup` and `verify` print a JSON receipt with the absolute backup `path`, number of `files`, and total payload `bytes`. The detailed file list and SHA-256 checksums stay in `manifest.json` inside the backup. Verification requires `config.json`, the `bots/` and `presets/` directories (either may be empty), and `data/app.db`.
 
 New backups and restored roots have a private enclosing directory on macOS/Linux. Restore does not inherit a widened backup payload directory mode. Treat the backup as sensitive. It contains conversation text and images, browser authentication state, configuration references, and the default TLS private key.
 
@@ -968,7 +968,7 @@ Stop SimpleBot. Restore into a path that does not exist:
 simplebot restore /path/to/simplebot-backup-2026-08-20 /srv/simplebot-restored
 ```
 
-Restore verifies the manifest and every checksum before copying the payload. It refuses to overwrite an existing root.
+Restore copies the payload into a private sibling directory and verifies the staged files against the manifest. The requested root appears only after verification succeeds. Choose a destination outside the backup that does not already exist.
 
 Point the launcher and operations commands at the restored root:
 
@@ -987,7 +987,7 @@ Run the read-only doctor:
 simplebot doctor
 ```
 
-Doctor validates required authored files, root ownership/permissions on POSIX, TLS parsing, certificate validity and key match when login is enabled, the same schema version and table set required by startup, and SQLite `quick_check`. It does not prove client trust or hostname coverage. It makes no network calls, reveals no secrets, and repairs nothing.
+Doctor checks the config file, each bot card, root ownership/permissions on POSIX, the same host, port, and TLS path settings as startup, TLS parsing, certificate validity and key match when login is enabled, the same schema version and table set required by startup, and SQLite `quick_check`. It does not prove client trust or hostname coverage. It makes no network calls, reveals no secrets, and repairs nothing.
 
 With a separate mutable root:
 

@@ -37,9 +37,10 @@ textarea,
 select,
 .ui-picker-trigger {
   min-height: var(--touch-target);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-control);
   background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
   padding: var(--space-xs) var(--space-md);
   color: var(--text);
   font-size: var(--text-ui);
@@ -167,6 +168,7 @@ select:focus-visible,
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
+  box-shadow: var(--shadow-raised);
   padding: var(--space-md) var(--space-lg);
 }
 

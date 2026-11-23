@@ -10,3 +10,4 @@ playwright-report/
 test-results/
 dist-public/
 .live/
+pnpm-lock.yaml

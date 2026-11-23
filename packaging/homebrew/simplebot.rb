@@ -10,9 +10,8 @@
 class Simplebot < Formula
   desc "Self-hosted conversation engine with persistent context"
   homepage "https://github.com/huglyfe/simplebot"
-  url "https://registry.npmjs.org/@huglyfe/simplebot/-/simplebot-0.1.0-alpha.1.tgz"
-  version "0.1.0-alpha.1"
-  sha256 "829e61efe45548db2aacea7bec53c47864419f45db3923965829748906e9528d"
+  url "https://registry.npmjs.org/@huglyfe/simplebot/-/simplebot-0.1.0-alpha.4.tgz"
+  sha256 "31f52850c3a3cf6a14850e1f2595fcf48ec19b332ab0f2e9de53366c07ddf366"
   license "Apache-2.0"
 
   depends_on "python" => :build

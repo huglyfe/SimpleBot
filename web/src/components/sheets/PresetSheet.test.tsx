@@ -220,7 +220,7 @@ describe('PresetSheet', () => {
 
   it('creates a preset from the current draft under a valid new name', async () => {
     const user = userEvent.setup();
-    const save = vi.fn<SavePreset>(() => Promise.resolve('evening'));
+    const save = vi.fn<SavePreset>(() => Promise.resolve('evening-mood'));
     const onSelectPreset = vi.fn();
     renderSheet(onSelectPreset, save);
 
@@ -233,16 +233,18 @@ describe('PresetSheet', () => {
       'Preset',
     );
     await user.click(createPreset);
-    await user.type(screen.getByLabelText('Preset name'), 'evening');
+    await user.type(screen.getByLabelText('Preset name'), 'Evening Mood');
     await user.click(screen.getByRole('button', { name: 'Clone' }));
 
     const [path, value, revision] = save.mock.calls.at(-1) ?? [];
-    expect(path).toBe('presets/evening');
+    expect(path).toBe('presets/evening-mood');
     expect(value?.persona).toEqual(
       expect.objectContaining({ name: 'Evening Alex' }),
     );
     expect(revision).toBe('missing');
-    await waitFor(() => expect(onSelectPreset).toHaveBeenCalledWith('evening'));
+    await waitFor(() =>
+      expect(onSelectPreset).toHaveBeenCalledWith('evening-mood'),
+    );
   });
 
   /**
@@ -271,28 +273,6 @@ describe('PresetSheet', () => {
     // The existing preset is untouched and the operator keeps their name.
     expect(screen.getByLabelText('Preset name')).toHaveValue('evening');
     expect(onSelectPreset).not.toHaveBeenCalled();
-  });
-
-  it('turns a friendly name into the authored preset slug', async () => {
-    const user = userEvent.setup();
-    const save = vi.fn<SavePreset>(() => Promise.resolve('evening'));
-    renderSheet(vi.fn(), save);
-
-    await user.click(
-      await screen.findByRole('button', { name: 'Preset actions' }),
-    );
-    await user.click(screen.getByRole('menuitem', { name: 'Clone preset' }));
-    await user.type(
-      await screen.findByLabelText('Preset name'),
-      'Evening Mood',
-    );
-    await user.click(screen.getByRole('button', { name: 'Clone' }));
-
-    expect(save).toHaveBeenCalledWith(
-      'presets/evening-mood',
-      expect.anything(),
-      'missing',
-    );
   });
 
   it('reports a provider that could not report its models', async () => {

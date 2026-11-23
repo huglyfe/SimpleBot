@@ -20,8 +20,8 @@ describe('ApplicationSheet', () => {
           }}
           patch={patch}
           version="0.10.0"
-          appearance="system"
-          onAppearanceChange={vi.fn()}
+          theme={{ appearance: 'system', accent: 'violet' }}
+          onThemeChange={vi.fn()}
         />
       </QueryClientProvider>,
     );
@@ -53,8 +53,8 @@ describe('ApplicationSheet', () => {
           value={{ application: {} }}
           patch={patch}
           version="0.10.0"
-          appearance="system"
-          onAppearanceChange={vi.fn()}
+          theme={{ appearance: 'system', accent: 'violet' }}
+          onThemeChange={vi.fn()}
         />
       </QueryClientProvider>,
     );
